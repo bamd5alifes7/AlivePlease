@@ -1,7 +1,9 @@
 .gradle/
 build/
 app/build/
+app/release/
 local.properties
 build_output*.log
 .idea/workspace.xml
+.idea/deploymentTargetDropDown.xml
 .vscode/
