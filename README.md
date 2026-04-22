@@ -19,10 +19,4 @@ Alive Please 是一個以 Android 製作的報平安 App。
 
 ## 畫面展示
 
-```md
-## Screenshots
-
-| Home | Settings | Onboarding |
-|---|---|---|
-| ![Home](./screenshots/home.png) | ![Settings](./screenshots/settings.png) | ![Onboarding](./screenshots/onboarding.png) |
-```
+![Home](./screenshots/home.png)
