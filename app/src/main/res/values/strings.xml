@@ -7,21 +7,11 @@
     <string name="check_in_button">我還活著</string>
     <string name="alive_days_label">累積活著天數</string>
     <string name="alive_days_summary">%1$d 天</string>
+    <string name="alive_days_supporting">恭喜你</string>
     <string name="family_notify_countdown_label">距離通知親友還有</string>
     <string name="check_in_success">今天的報平安已記下來了</string>
     <string name="settings">設定</string>
     <string name="back">返回</string>
-
-    <string-array name="care_messages">
-        <item>今天也要記得照顧自己，好好吃飯。</item>
-        <item>如果有點累了，先休息一下也沒關係。</item>
-        <item>能平安度過今天，就已經很不容易了。</item>
-        <item>你不需要每一刻都很強，慢慢來就好。</item>
-        <item>就算只前進一點點，那也是真實的進步。</item>
-        <item>別忘了，你值得被關心，也值得被等待。</item>
-        <item>如果今天很難，就先把自己照顧好。</item>
-        <item>願你今天平安，也願你知道有人在意你。</item>
-    </string-array>
 
     <string name="settings_title">設定</string>
     <string name="user_name_title">你的名字</string>
@@ -46,6 +36,74 @@
     <string name="test_email_success">測試信寄送成功。</string>
     <string name="test_email_failed">測試信寄送失敗，請再檢查設定。</string>
     <string name="open_logs">查看執行紀錄</string>
+    <string name="view_logs">查看紀錄</string>
+    <string name="replay_onboarding">重看引導教學</string>
+    <string name="identity_section">身份</string>
+    <string name="reminder_pacing_section">提醒節奏</string>
+    <string name="family_notification_section">家人通知</string>
+    <string name="mail_delivery_section">寄信管道</string>
+    <string name="display_name_label">輸入你想顯示的名字</string>
+    <string name="check_in_interval_label">幾小時提醒一次</string>
+    <string name="family_wait_time_title">通知家人的等待時間</string>
+    <string name="family_wait_time_label">幾小時沒打卡就寄信</string>
+    <string name="family_email_label">要通知的 Email</string>
+    <string name="recipient_title_label">收件人稱呼</string>
+    <string name="recipient_title_label_hint">例如：媽媽、哥哥、家人</string>
+    <string name="recipient_title_supporting">這會出現在信件開頭。</string>
+    <string name="webhook_default_label">留空時會使用預設 GAS</string>
+    <string name="webhook_description">你可以貼上自己的 GAS Webhook。若留空，測試寄信與正式寄信都會先使用預設值。</string>
+    <string name="missing_family_email">請先填入家人 Email</string>
+    <string name="sending_test_email">正在寄出測試信...</string>
+    <string name="test_email_sent">測試信已送出</string>
+    <string name="test_email_failed_short">測試寄信失敗</string>
+    <string name="care_toggle_title">開啟關懷提醒</string>
+    <string name="care_toggle_description">白天會以 4 到 8 小時的隨機間隔提醒你，23:00 到 07:00 會順延到早上。</string>
+    <string name="settings_tutorial_title">設定導覽</string>
+    <string name="settings_center_title">設定中心</string>
+    <string name="settings_hero_tutorial_title">導覽中的設定頁</string>
+    <string name="settings_hero_title">把通知節奏調到剛剛好</string>
+    <string name="settings_hero_tutorial_description">你現在看到的是逐步導覽模式，系統會一步一步帶你理解每個欄位。</string>
+    <string name="settings_hero_description">這裡決定提醒你、通知家人、以及寄信流程的主要行為。</string>
+    <string name="status_care_reminder">關懷提醒</string>
+    <string name="status_family_notification">家人通知</string>
+    <string name="status_enabled">已開啟</string>
+    <string name="status_disabled">已關閉</string>
+    <string name="status_not_configured">未完成</string>
+    <string name="status_configured">已設定</string>
+    <string name="status_default_value">預設值</string>
+    <string name="status_custom_value">自訂</string>
+    <string name="tutorial_user_name_title">先設定你的名字</string>
+    <string name="tutorial_user_name_description">這個名字會出現在通知與寄信內容裡，讓收到訊息的人知道是誰。</string>
+    <string name="tutorial_family_email_title">填入家人 Email</string>
+    <string name="tutorial_family_email_description">如果你太久沒有報平安，系統就會寄信到這個地址。</string>
+    <string name="tutorial_webhook_title">Webhook 可先用預設值</string>
+    <string name="tutorial_webhook_description">這欄留空會自動使用內建 GAS。你也可以在這裡按測試寄信。</string>
+    <string name="tutorial_care_toggle_title">決定是否開啟關懷提醒</string>
+    <string name="tutorial_care_toggle_description">打開後，系統會在白天以 4 到 8 小時的隨機間隔提醒你，夜間會自動延後。</string>
+    <string name="tutorial_save_title">最後記得儲存設定</string>
+    <string name="tutorial_save_description">最少完成：名字、家人 Email、按下儲存。Webhook 可先留空。</string>
+    <string name="tutorial_step_format">步驟 %1$d / %2$d</string>
+    <string name="tutorial_minimum_setup_title">最小可用組合</string>
+    <string name="tutorial_minimum_setup_steps">1. 名字\n2. 家人 Email\n3. 按下儲存</string>
+    <string name="tutorial_leave_first">先離開</string>
+    <string name="tutorial_previous">上一步</string>
+    <string name="tutorial_complete">完成教學</string>
+    <string name="tutorial_next">下一步</string>
+    <string name="tutorial_close">關閉教學</string>
+    <string name="tutorial_highlight_badge">請看這裡</string>
+    <string name="tutorial_required">必要</string>
+    <string name="tutorial_optional">可選</string>
+    <string name="main_heart_emoji">❤️</string>
+    <string name="check_in_success_with_emoji">🎉 今天的報平安已記下來了</string>
+    <string name="countdown_emoji">⏳</string>
+    <string name="streak_days_label">連續打卡天數</string>
+    <string name="streak_days_summary">%1$d 天</string>
+    <string name="blessing_progress_status_short">再 %1$d 天解鎖祝福</string>
+    <string name="celebration_title">✨ 連續 %1$d 天打卡</string>
+    <string name="celebration_message_3">你已經連續做到 3 天了，這不是小事，真的很棒。</string>
+    <string name="celebration_message_6">6 天連續打卡，代表你一直在努力照顧自己。</string>
+    <string name="celebration_message_9">9 天了，你正在慢慢把平安這件事變成習慣。</string>
+    <string name="celebration_message_default">連續 %1$d 天都沒有中斷，請把這份穩定也好好誇獎自己。</string>
 
     <string name="notification_channel_checkin_name">打卡提醒</string>
     <string name="notification_channel_checkin_desc">提醒你打開 App 報平安。</string>
@@ -55,6 +113,7 @@
     <string name="notification_channel_family_status_desc">在寄出親友通知信後告訴你成功或失敗。</string>
     <string name="notification_checkin_title">別忘了報平安</string>
     <string name="notification_checkin_message">打開 Alive Please，讓在意你的人知道你今天還好。</string>
+    <string name="notification_checkin_message_with_blessing">打開 Alive Please 報平安。再 %1$d 天，就會收到下一段連續打卡祝福。</string>
     <string name="notification_care_title">給你的小提醒</string>
     <string name="notification_family_status_success_title">我替你把消息送出了</string>
     <string name="notification_family_status_success_message">剛剛已順利寄信到 %1$s，讓對方知道該留意一下你。</string>

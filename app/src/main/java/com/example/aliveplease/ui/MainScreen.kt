@@ -1,6 +1,5 @@
 package com.example.aliveplease.ui
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInOutSine
 import androidx.compose.animation.core.RepeatMode
@@ -47,7 +46,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,29 +61,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aliveplease.R
-import com.example.aliveplease.data.AppDataStore
 import com.example.aliveplease.ui.theme.AppColors
 import com.example.aliveplease.utils.TimeFormatter
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    dataStore: AppDataStore,
     onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
-
-    var aliveDays by remember { mutableStateOf(dataStore.getAliveDays()) }
-    var streakDays by remember { mutableStateOf(dataStore.getCurrentStreak()) }
-    var checkInDates by remember { mutableStateOf(dataStore.getCheckInDates()) }
-    var countdown by remember { mutableStateOf(dataStore.getTimeUntilFamilyNotification()) }
-    var careMessage by remember { mutableStateOf(getCareMessage(context)) }
-    var showCheckInFeedback by remember { mutableStateOf(false) }
+    val viewModel: MainViewModel = viewModel(factory = MainViewModel.factory(context))
+    val uiState = viewModel.uiState
     var buttonPressed by remember { mutableStateOf(false) }
-    var celebrationMessage by remember { mutableStateOf("") }
-    var showCelebration by remember { mutableStateOf(false) }
 
     val buttonScale by animateFloatAsState(
         targetValue = if (buttonPressed) 0.94f else 1f,
@@ -115,13 +105,6 @@ fun MainScreen(
         ),
         label = "pulseAlpha"
     )
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            countdown = dataStore.getTimeUntilFamilyNotification()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -183,14 +166,14 @@ fun MainScreen(
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = "今天想對你說",
+                            text = stringResource(R.string.today_care_title),
                             fontSize = 13.sp,
                             color = AppColors.TextHint,
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = careMessage,
+                            text = uiState.careMessage,
                             fontSize = 18.sp,
                             lineHeight = 28.sp,
                             color = AppColors.TextPrimary,
@@ -216,19 +199,7 @@ fun MainScreen(
                     Button(
                         onClick = {
                             buttonPressed = true
-                            val isNewDay = dataStore.performCheckIn()
-                            aliveDays = dataStore.getAliveDays()
-                            streakDays = dataStore.getCurrentStreak()
-                            checkInDates = dataStore.getCheckInDates()
-                            countdown = dataStore.getTimeUntilFamilyNotification()
-                            careMessage = getCareMessage(context)
-                            showCheckInFeedback = true
-
-                            if (isNewDay && streakDays > 0 && streakDays % 3 == 0) {
-                                celebrationMessage = getCelebrationMessage(streakDays)
-                                showCelebration = true
-                            }
-
+                            viewModel.performCheckIn()
                             buttonPressed = false
                         },
                         modifier = Modifier
@@ -254,13 +225,13 @@ fun MainScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "❤️",
+                                    text = stringResource(R.string.main_heart_emoji),
                                     fontSize = 30.sp,
                                     color = Color.White
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "我還活著",
+                                    text = stringResource(R.string.check_in_button),
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color.White,
@@ -279,18 +250,23 @@ fun MainScreen(
                 ) {
                     StatPill(
                         modifier = Modifier.weight(1f),
-                        title = "累積活著天數",
-                        value = "$aliveDays 天"
+                        title = stringResource(R.string.alive_days_label),
+                        value = stringResource(R.string.alive_days_summary, uiState.aliveDays),
+                        supportingText = stringResource(R.string.alive_days_supporting)
                     )
                     StatPill(
                         modifier = Modifier.weight(1f),
-                        title = "連續打卡天數",
-                        value = "$streakDays 天"
+                        title = stringResource(R.string.streak_days_label),
+                        value = stringResource(R.string.streak_days_summary, uiState.streakDays),
+                        supportingText = stringResource(
+                            R.string.blessing_progress_status_short,
+                            uiState.daysUntilNextBlessing
+                        )
                     )
                 }
 
                 AnimatedVisibility(
-                    visible = showCelebration,
+                    visible = uiState.showCelebration,
                     enter = fadeIn(animationSpec = tween(250)) + scaleIn(
                         initialScale = 0.92f,
                         animationSpec = tween(250)
@@ -300,28 +276,16 @@ fun MainScreen(
                         animationSpec = tween(250)
                     )
                 ) {
-                    LaunchedEffect(showCelebration) {
-                        if (showCelebration) {
-                            delay(6000)
-                            showCelebration = false
-                        }
-                    }
-
                     CelebrationCard(
-                        streakDays = streakDays,
-                        message = celebrationMessage,
+                        streakDays = uiState.streakDays,
+                        message = uiState.celebrationMessage,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 14.dp)
                     )
                 }
 
-                if (showCheckInFeedback) {
-                    LaunchedEffect(showCheckInFeedback) {
-                        delay(2000)
-                        showCheckInFeedback = false
-                    }
-
+                if (uiState.showCheckInFeedback) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Surface(
                         shape = RoundedCornerShape(50),
@@ -333,7 +297,7 @@ fun MainScreen(
                         )
                     ) {
                         Text(
-                            text = "🎉 今天的報平安已記下來了",
+                            text = stringResource(R.string.check_in_success_with_emoji),
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                             fontSize = 15.sp,
                             color = AppColors.PrimaryGreen,
@@ -356,19 +320,19 @@ fun MainScreen(
                                 .background(AppColors.AccentAmberGlow),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("⏳", fontSize = 20.sp)
+                            Text(stringResource(R.string.countdown_emoji), fontSize = 20.sp)
                         }
                         Spacer(modifier = Modifier.width(14.dp))
                         Column {
                             Text(
-                                text = "距離通知親友還有",
+                                text = stringResource(R.string.family_notify_countdown_label),
                                 fontSize = 12.sp,
                                 color = AppColors.TextHint,
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = TimeFormatter.formatCountdown(context, countdown),
+                                text = TimeFormatter.formatCountdown(context, uiState.countdown),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = AppColors.AccentAmber
@@ -380,7 +344,7 @@ fun MainScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 com.example.aliveplease.ui.components.CalendarView(
-                    checkInDates = checkInDates
+                    checkInDates = uiState.checkInDates
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -393,7 +357,8 @@ fun MainScreen(
 private fun StatPill(
     modifier: Modifier = Modifier,
     title: String,
-    value: String
+    value: String,
+    supportingText: String? = null
 ) {
     Surface(
         shape = RoundedCornerShape(999.dp),
@@ -421,6 +386,20 @@ private fun StatPill(
                 fontWeight = FontWeight.ExtraBold,
                 color = AppColors.PrimaryGreen
             )
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier.height(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!supportingText.isNullOrBlank()) {
+                    Text(
+                        text = supportingText,
+                        fontSize = 11.sp,
+                        color = AppColors.TextHint,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }
@@ -448,7 +427,7 @@ private fun CelebrationCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "✨ 連續 $streakDays 天打卡",
+                text = stringResource(R.string.celebration_title, streakDays),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White
@@ -493,19 +472,5 @@ fun GlassCard(
             )
     ) {
         content()
-    }
-}
-
-private fun getCareMessage(context: Context): String {
-    val messages = context.resources.getStringArray(R.array.care_messages)
-    return messages.random()
-}
-
-private fun getCelebrationMessage(streakDays: Int): String {
-    return when (streakDays) {
-        3 -> "你已經連續做到 3 天了，這不是小事，真的很棒。"
-        6 -> "6 天連續打卡，代表你一直在努力照顧自己。"
-        9 -> "9 天了，你正在慢慢把平安這件事變成習慣。"
-        else -> "連續 $streakDays 天都沒有中斷，請把這份穩定也好好誇獎自己。"
     }
 }

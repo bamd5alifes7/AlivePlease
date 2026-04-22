@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.aliveplease.MainActivity
 import com.example.aliveplease.R
+import com.example.aliveplease.data.AppDataStore
 
 object NotificationHelper {
 
@@ -60,10 +61,18 @@ object NotificationHelper {
     }
 
     fun sendCheckInReminder(context: Context) {
+        val dataStore = AppDataStore(context)
+        val daysUntilNextBlessing = daysUntilNextBlessing(dataStore.getCurrentStreak())
+        val reminderMessage = context.getString(
+            R.string.notification_checkin_message_with_blessing,
+            daysUntilNextBlessing
+        )
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_CHECK_IN)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(context.getString(R.string.notification_checkin_title))
-            .setContentText(context.getString(R.string.notification_checkin_message))
+            .setContentText(reminderMessage)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(reminderMessage))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(createMainActivityPendingIntent(context))
@@ -125,6 +134,11 @@ object NotificationHelper {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+    }
+
+    private fun daysUntilNextBlessing(streakDays: Int): Int {
+        val remainder = streakDays % 3
+        return if (remainder == 0) 3 else 3 - remainder
     }
 
     private fun notifySafely(context: Context, id: Int, notification: android.app.Notification) {

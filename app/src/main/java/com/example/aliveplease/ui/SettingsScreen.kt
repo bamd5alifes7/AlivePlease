@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,118 +42,88 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aliveplease.data.AppDataStore
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aliveplease.R
 import com.example.aliveplease.ui.theme.AppColors
-import com.example.aliveplease.utils.EmailContentBuilder
-import com.example.aliveplease.utils.TimeFormatter
-import com.example.aliveplease.utils.WebhookHelper
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    dataStore: AppDataStore,
     onNavigateBack: () -> Unit,
     onSettingsSaved: () -> Unit,
     onNavigateToLogs: () -> Unit,
     onReplayOnboarding: () -> Unit,
     tutorialMode: Boolean = false
 ) {
-    var userName by remember { mutableStateOf(dataStore.getUserName().takeUnless { it == "??" }.orEmpty()) }
-    var checkInInterval by remember { mutableStateOf(dataStore.getNotifyInterval().toString()) }
-    var familyInterval by remember {
-        val current = dataStore.getFamilyNotifyIntervalFloat()
-        mutableStateOf(if (current % 1 == 0f) current.toInt().toString() else current.toString())
-    }
-    var familyEmail by remember { mutableStateOf(dataStore.getFamilyEmail()) }
-    var familyRecipientTitle by remember {
-        mutableStateOf(dataStore.getFamilyRecipientTitle().takeUnless { it.contains("??") }.orEmpty())
-    }
-    var gasWebhookUrl by remember { mutableStateOf(dataStore.getStoredGasWebhookUrl()) }
-    var careNotificationEnabled by remember { mutableStateOf(dataStore.isCareNotificationOn()) }
-    var showSaveMessage by remember { mutableStateOf(false) }
-    var emailError by remember { mutableStateOf(false) }
-    var tutorialStepIndex by remember(tutorialMode) { mutableStateOf(if (tutorialMode) 0 else -1) }
-
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(context))
+    val uiState = viewModel.uiState
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
-    val userNameFocusRequester = remember { FocusRequester() }
-    val familyEmailFocusRequester = remember { FocusRequester() }
-    val webhookFocusRequester = remember { FocusRequester() }
+    val sendingTestEmailMessage = stringResource(R.string.sending_test_email)
 
-    val tutorialSteps = remember {
-        listOf(
-            TutorialStep(
-                key = TutorialKey.UserName,
-                title = "先設定你的名字",
-                description = "這個名字會出現在通知與寄信內容裡，讓收到訊息的人知道是誰。",
-                requirement = TutorialRequirement.Required
-            ),
-            TutorialStep(
-                key = TutorialKey.FamilyEmail,
-                title = "填入家人 Email",
-                description = "如果你太久沒有報平安，系統就會寄信到這個地址。",
-                requirement = TutorialRequirement.Required
-            ),
-            TutorialStep(
-                key = TutorialKey.Webhook,
-                title = "Webhook 可先用預設值",
-                description = "這欄留空會自動使用內建 GAS。你也可以在這裡按測試寄信。",
-                requirement = TutorialRequirement.Optional
-            ),
-            TutorialStep(
-                key = TutorialKey.CareToggle,
-                title = "決定是否開啟關懷提醒",
-                description = "打開後，app 會主動提醒你回來打卡報平安。",
-                requirement = TutorialRequirement.Optional
-            ),
-            TutorialStep(
-                key = TutorialKey.Save,
-                title = "最後記得儲存設定",
-                description = "最少完成：名字、家人 Email、按下儲存。Webhook 可先留空。",
-                requirement = TutorialRequirement.Required
-            )
+    LaunchedEffect(tutorialMode) {
+        viewModel.reloadState(tutorialMode)
+    }
+
+    val tutorialSteps = listOf(
+        TutorialStep(
+            key = TutorialKey.UserName,
+            title = stringResource(R.string.tutorial_user_name_title),
+            description = stringResource(R.string.tutorial_user_name_description),
+            requirement = TutorialRequirement.Required
+        ),
+        TutorialStep(
+            key = TutorialKey.FamilyEmail,
+            title = stringResource(R.string.tutorial_family_email_title),
+            description = stringResource(R.string.tutorial_family_email_description),
+            requirement = TutorialRequirement.Required
+        ),
+        TutorialStep(
+            key = TutorialKey.Webhook,
+            title = stringResource(R.string.tutorial_webhook_title),
+            description = stringResource(R.string.tutorial_webhook_description),
+            requirement = TutorialRequirement.Optional
+        ),
+        TutorialStep(
+            key = TutorialKey.CareToggle,
+            title = stringResource(R.string.tutorial_care_toggle_title),
+            description = stringResource(R.string.tutorial_care_toggle_description),
+            requirement = TutorialRequirement.Optional
+        ),
+        TutorialStep(
+            key = TutorialKey.Save,
+            title = stringResource(R.string.tutorial_save_title),
+            description = stringResource(R.string.tutorial_save_description),
+            requirement = TutorialRequirement.Required
         )
-    }
-    val currentStep = tutorialSteps.getOrNull(tutorialStepIndex)
+    )
+    val currentStep = tutorialSteps.getOrNull(uiState.tutorialStepIndex)
 
-    LaunchedEffect(tutorialStepIndex, tutorialMode) {
+    LaunchedEffect(uiState.tutorialStepIndex, tutorialMode) {
         if (!tutorialMode) return@LaunchedEffect
-        val targets = listOf(0, 520, 980, 1320, 1640)
-        scrollState.animateScrollTo(targets.getOrElse(tutorialStepIndex) { targets.last() })
-    }
-
-    LaunchedEffect(currentStep?.key, tutorialMode) {
-        if (!tutorialMode) return@LaunchedEffect
-        when (currentStep?.key) {
-            TutorialKey.UserName -> userNameFocusRequester.requestFocus()
-            TutorialKey.FamilyEmail -> familyEmailFocusRequester.requestFocus()
-            TutorialKey.Webhook -> webhookFocusRequester.requestFocus()
-            else -> Unit
-        }
+        val targets = listOf(0, 560, 1010, 1360, 1710)
+        scrollState.animateScrollTo(targets.getOrElse(uiState.tutorialStepIndex) { targets.last() })
     }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = AppColors.PrimaryGreen,
-        unfocusedBorderColor = AppColors.TextHint.copy(alpha = 0.5f),
+        unfocusedBorderColor = AppColors.TextHint.copy(alpha = 0.4f),
         focusedLabelColor = AppColors.PrimaryGreen,
         unfocusedLabelColor = AppColors.TextHint,
         focusedTextColor = AppColors.TextPrimary,
@@ -172,7 +143,7 @@ fun SettingsScreen(
                     containerColor = AppColors.SurfaceMid,
                     contentColor = AppColors.TextPrimary,
                     actionColor = AppColors.PrimaryGreen,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(14.dp)
                 )
             }
         },
@@ -180,17 +151,20 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (tutorialMode) "設定導覽" else "設定",
-                        fontWeight = FontWeight.Bold,
+                        text = stringResource(
+                            if (tutorialMode) R.string.settings_tutorial_title
+                            else R.string.settings_center_title
+                        ),
+                        fontWeight = FontWeight.ExtraBold,
                         color = AppColors.TextPrimary,
-                        fontSize = 20.sp
+                        fontSize = 22.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "返回",
+                            contentDescription = stringResource(R.string.back),
                             tint = AppColors.TextSecondary
                         )
                     }
@@ -205,7 +179,11 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(AppColors.Background, AppColors.SurfaceDark, AppColors.Background)
+                        colors = listOf(
+                            AppColors.Background,
+                            AppColors.SurfaceDark,
+                            AppColors.Background
+                        )
                     )
                 )
                 .padding(paddingValues)
@@ -217,19 +195,25 @@ fun SettingsScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                SettingsHeroCard(
+                    tutorialMode = tutorialMode,
+                    careNotificationEnabled = uiState.careNotificationEnabled,
+                    familyEmail = uiState.familyEmail,
+                    gasWebhookUrl = uiState.gasWebhookUrl
+                )
+
                 SettingSection(
                     modifier = sectionModifier(currentStep?.key, TutorialKey.UserName, tutorialMode),
                     highlighted = currentStep?.key == TutorialKey.UserName && tutorialMode,
+                    eyebrow = stringResource(R.string.identity_section),
                     icon = "A",
-                    title = "你的名字"
+                    title = stringResource(R.string.user_name_title)
                 ) {
                     OutlinedTextField(
-                        value = userName,
-                        onValueChange = { userName = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(userNameFocusRequester),
-                        label = { Text("輸入你想顯示的名字") },
+                        value = uiState.userName,
+                        onValueChange = viewModel::onUserNameChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.display_name_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
                         colors = fieldColors
@@ -238,14 +222,15 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = sectionModifier(currentStep?.key, null, tutorialMode),
+                    eyebrow = stringResource(R.string.reminder_pacing_section),
                     icon = "1",
-                    title = "打卡提醒間隔"
+                    title = stringResource(R.string.check_in_interval)
                 ) {
                     OutlinedTextField(
-                        value = checkInInterval,
-                        onValueChange = { checkInInterval = it },
+                        value = uiState.checkInInterval,
+                        onValueChange = viewModel::onCheckInIntervalChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("幾小時提醒一次") },
+                        label = { Text(stringResource(R.string.check_in_interval_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         colors = fieldColors
@@ -254,14 +239,15 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = sectionModifier(currentStep?.key, null, tutorialMode),
+                    eyebrow = stringResource(R.string.family_notification_section),
                     icon = "2",
-                    title = "家人通知間隔"
+                    title = stringResource(R.string.family_wait_time_title)
                 ) {
                     OutlinedTextField(
-                        value = familyInterval,
-                        onValueChange = { familyInterval = it },
+                        value = uiState.familyInterval,
+                        onValueChange = viewModel::onFamilyIntervalChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("幾小時沒打卡就寄信") },
+                        label = { Text(stringResource(R.string.family_wait_time_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         colors = fieldColors
@@ -271,28 +257,24 @@ fun SettingsScreen(
                 SettingSection(
                     modifier = sectionModifier(currentStep?.key, TutorialKey.FamilyEmail, tutorialMode),
                     highlighted = currentStep?.key == TutorialKey.FamilyEmail && tutorialMode,
+                    eyebrow = stringResource(R.string.family_notification_section),
                     icon = "@",
-                    title = "家人 Email"
+                    title = stringResource(R.string.family_email)
                 ) {
                     OutlinedTextField(
-                        value = familyEmail,
-                        onValueChange = {
-                            familyEmail = it
-                            emailError = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(familyEmailFocusRequester),
-                        label = { Text("要通知的 Email") },
+                        value = uiState.familyEmail,
+                        onValueChange = viewModel::onFamilyEmailChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.family_email_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
-                        isError = emailError,
+                        isError = uiState.emailError,
                         colors = fieldColors
                     )
 
-                    if (emailError) {
+                    if (uiState.emailError) {
                         Text(
-                            text = "Email 格式不正確",
+                            text = stringResource(R.string.invalid_email),
                             color = AppColors.Error,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -302,17 +284,18 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = sectionModifier(currentStep?.key, null, tutorialMode),
+                    eyebrow = stringResource(R.string.family_notification_section),
                     icon = "稱",
-                    title = "收件人稱呼"
+                    title = stringResource(R.string.recipient_title_label)
                 ) {
                     OutlinedTextField(
-                        value = familyRecipientTitle,
-                        onValueChange = { familyRecipientTitle = it },
+                        value = uiState.familyRecipientTitle,
+                        onValueChange = viewModel::onFamilyRecipientTitleChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("例如：媽媽、哥哥、家人") },
+                        label = { Text(stringResource(R.string.recipient_title_label_hint)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
-                        supportingText = { Text("這會出現在信件開頭。") },
+                        supportingText = { Text(stringResource(R.string.recipient_title_supporting)) },
                         colors = fieldColors
                     )
                 }
@@ -320,23 +303,22 @@ fun SettingsScreen(
                 SettingSection(
                     modifier = sectionModifier(currentStep?.key, TutorialKey.Webhook, tutorialMode),
                     highlighted = currentStep?.key == TutorialKey.Webhook && tutorialMode,
+                    eyebrow = stringResource(R.string.mail_delivery_section),
                     icon = "G",
-                    title = "GAS Webhook URL"
+                    title = stringResource(R.string.webhook_title)
                 ) {
                     OutlinedTextField(
-                        value = gasWebhookUrl,
-                        onValueChange = { gasWebhookUrl = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(webhookFocusRequester),
-                        label = { Text("留空時會使用預設 GAS") },
+                        value = uiState.gasWebhookUrl,
+                        onValueChange = viewModel::onGasWebhookUrlChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.webhook_default_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         singleLine = true,
                         colors = fieldColors
                     )
 
                     Text(
-                        text = "這裡可以貼自己的 GAS Webhook。若留空，測試寄信與正式寄信都會先使用預設值。",
+                        text = stringResource(R.string.webhook_description),
                         color = AppColors.TextHint,
                         fontSize = 12.sp,
                         lineHeight = 18.sp,
@@ -347,61 +329,29 @@ fun SettingsScreen(
 
                     OutlinedButton(
                         onClick = {
-                            if (familyEmail.isBlank()) {
-                                scope.launch { snackbarHostState.showSnackbar("請先填入家人 Email") }
-                                return@OutlinedButton
-                            }
-                            if (!TimeFormatter.isValidEmail(familyEmail)) {
-                                emailError = true
-                                return@OutlinedButton
-                            }
-
-                            val safeUserName = userName.trim().ifBlank { dataStore.getUserName() }
-                            val safeRecipientTitle = familyRecipientTitle.trim().ifBlank { dataStore.getFamilyRecipientTitle() }
-                            val resolvedWebhookUrl = gasWebhookUrl.trim().ifBlank { dataStore.getGasWebhookUrl() }
-                            val intervalValue = familyInterval.toFloatOrNull() ?: dataStore.getFamilyNotifyIntervalFloat()
-
-                            val subject = EmailContentBuilder.buildSubject(
-                                recipientTitle = safeRecipientTitle,
-                                userName = safeUserName,
-                                isTest = true
-                            )
-                            val body = EmailContentBuilder.buildBody(
-                                recipientTitle = safeRecipientTitle,
-                                userName = safeUserName,
-                                intervalHours = intervalValue,
-                                isTest = true
-                            )
-
                             scope.launch {
-                                snackbarHostState.showSnackbar("正在寄出測試信...")
-                                val result = WebhookHelper.sendEmail(
-                                    webhookUrl = resolvedWebhookUrl,
-                                    to = familyEmail,
-                                    subject = subject,
-                                    body = body
-                                )
-                                snackbarHostState.showSnackbar(
-                                    if (result.success) "測試信已送出" else result.message ?: "測試寄信失敗"
-                                )
+                                snackbarHostState.showSnackbar(sendingTestEmailMessage)
+                                snackbarHostState.showSnackbar(viewModel.sendTestEmail())
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
                             brush = Brush.horizontalGradient(
                                 listOf(
-                                    AppColors.PrimaryGreen.copy(alpha = 0.6f),
-                                    AppColors.PrimaryGreenDim.copy(alpha = 0.6f)
+                                    AppColors.PrimaryGreen.copy(alpha = 0.7f),
+                                    AppColors.PrimaryGreenDim.copy(alpha = 0.7f)
                                 )
                             )
                         ),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.PrimaryGreen)
                     ) {
-                        Text("測試寄信", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.send_test_email), fontWeight = FontWeight.SemiBold)
                     }
                 }
 
-                DarkCard(modifier = sectionModifier(currentStep?.key, TutorialKey.CareToggle, tutorialMode)) {
+                DarkCard(
+                    modifier = sectionModifier(currentStep?.key, TutorialKey.CareToggle, tutorialMode)
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -415,24 +365,24 @@ fun SettingsScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(AppColors.PrimaryGlow),
+                                    .background(AppColors.AccentAmberGlow),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("!", fontSize = 16.sp)
+                                Text("!", fontSize = 16.sp, color = AppColors.AccentAmber)
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "開啟關懷提醒",
+                                    text = stringResource(R.string.care_toggle_title),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = AppColors.TextPrimary
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "白天會以 4 到 8 小時的隨機間隔提醒你，23:00 到 07:00 會順延到早上。",
+                                    text = stringResource(R.string.care_toggle_description),
                                     color = AppColors.TextHint,
                                     fontSize = 12.sp,
                                     lineHeight = 18.sp
@@ -440,8 +390,8 @@ fun SettingsScreen(
                             }
                         }
                         Switch(
-                            checked = careNotificationEnabled,
-                            onCheckedChange = { careNotificationEnabled = it },
+                            checked = uiState.careNotificationEnabled,
+                            onCheckedChange = viewModel::onCareNotificationEnabledChanged,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AppColors.PrimaryGreen,
@@ -450,7 +400,6 @@ fun SettingsScreen(
                             )
                         )
                     }
-
                 }
 
                 DarkCard(modifier = sectionModifier(currentStep?.key, null, tutorialMode)) {
@@ -460,12 +409,15 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             border = ButtonDefaults.outlinedButtonBorder.copy(
                                 brush = Brush.horizontalGradient(
-                                    listOf(AppColors.TextHint.copy(alpha = 0.4f), AppColors.TextHint.copy(alpha = 0.2f))
+                                    listOf(
+                                        AppColors.TextHint.copy(alpha = 0.4f),
+                                        AppColors.TextHint.copy(alpha = 0.2f)
+                                    )
                                 )
                             ),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.TextSecondary)
                         ) {
-                            Text("查看紀錄", fontWeight = FontWeight.Medium)
+                            Text(stringResource(R.string.view_logs), fontWeight = FontWeight.Medium)
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
@@ -484,7 +436,7 @@ fun SettingsScreen(
                                 ),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.PrimaryGreen)
                             ) {
-                                Text("重看引導教學", fontWeight = FontWeight.Medium)
+                                Text(stringResource(R.string.replay_onboarding), fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -493,8 +445,8 @@ fun SettingsScreen(
                 Box(
                     modifier = sectionModifier(currentStep?.key, TutorialKey.Save, tutorialMode)
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .height(58.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(
                             Brush.horizontalGradient(
                                 listOf(AppColors.PrimaryGreen, AppColors.PrimaryGreenDim)
@@ -503,30 +455,18 @@ fun SettingsScreen(
                 ) {
                     Button(
                         onClick = {
-                            if (familyEmail.isNotBlank() && !TimeFormatter.isValidEmail(familyEmail)) {
-                                emailError = true
-                                return@Button
+                            if (viewModel.saveSettings()) {
+                                onSettingsSaved()
                             }
-
-                            userName.trim().takeIf { it.isNotBlank() }?.let(dataStore::setUserName)
-                            checkInInterval.toLongOrNull()?.takeIf { it > 0 }?.let(dataStore::setNotifyInterval)
-                            familyInterval.toFloatOrNull()?.takeIf { it > 0 }?.let(dataStore::setFamilyNotifyIntervalFloat)
-                            dataStore.setFamilyEmail(familyEmail)
-                            dataStore.setFamilyRecipientTitle(familyRecipientTitle)
-                            dataStore.setGasWebhookUrl(gasWebhookUrl)
-                            dataStore.setCareNotificationOn(careNotificationEnabled)
-
-                            onSettingsSaved()
-                            showSaveMessage = true
                         },
                         modifier = Modifier.fillMaxSize(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(16.dp),
                         contentPadding = PaddingValues()
                     ) {
                         Text(
-                            text = "儲存設定",
+                            text = stringResource(R.string.save_settings),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White
@@ -534,22 +474,22 @@ fun SettingsScreen(
                     }
                 }
 
-                if (showSaveMessage) {
-                    LaunchedEffect(showSaveMessage) {
+                if (uiState.showSaveMessage) {
+                    LaunchedEffect(uiState.showSaveMessage) {
                         kotlinx.coroutines.delay(2000)
-                        showSaveMessage = false
+                        viewModel.onSaveMessageShown()
                     }
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(AppColors.PrimaryGreen.copy(alpha = 0.12f))
-                            .border(1.dp, AppColors.PrimaryGreen.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .border(1.dp, AppColors.PrimaryGreen.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "設定已儲存",
+                            text = stringResource(R.string.settings_saved),
                             color = AppColors.PrimaryGreen,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp
@@ -557,32 +497,152 @@ fun SettingsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(if (tutorialMode) 180.dp else 16.dp))
+                Spacer(modifier = Modifier.height(if (tutorialMode) 190.dp else 16.dp))
             }
 
             if (tutorialMode && currentStep != null) {
                 TutorialOverlay(
                     step = currentStep,
-                    stepIndex = tutorialStepIndex,
+                    stepIndex = uiState.tutorialStepIndex,
                     totalSteps = tutorialSteps.size,
-                    placeAtTop = tutorialStepIndex >= 2,
+                    placeAtTop = uiState.tutorialStepIndex >= 2,
                     onNext = {
-                        if (tutorialStepIndex < tutorialSteps.lastIndex) {
-                            tutorialStepIndex += 1
-                        } else {
+                        if (viewModel.onTutorialNext()) {
                             onNavigateBack()
                         }
                     },
                     onBack = {
-                        if (tutorialStepIndex > 0) {
-                            tutorialStepIndex -= 1
-                        } else {
+                        if (viewModel.onTutorialBack()) {
                             onNavigateBack()
                         }
                     },
                     onClose = onNavigateBack
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SettingsHeroCard(
+    tutorialMode: Boolean,
+    careNotificationEnabled: Boolean,
+    familyEmail: String,
+    gasWebhookUrl: String
+) {
+    DarkCard {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    AppColors.PrimaryGreen.copy(alpha = 0.9f),
+                                    AppColors.AccentAmber.copy(alpha = 0.9f)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = stringResource(
+                            if (tutorialMode) R.string.settings_hero_tutorial_title
+                            else R.string.settings_hero_title
+                        ),
+                        color = AppColors.TextPrimary,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (tutorialMode) {
+                            stringResource(R.string.settings_hero_tutorial_description)
+                        } else {
+                            stringResource(R.string.settings_hero_description)
+                        },
+                        color = AppColors.TextSecondary,
+                        fontSize = 13.sp,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatusChip(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(R.string.status_care_reminder),
+                    value = stringResource(
+                        if (careNotificationEnabled) R.string.status_enabled else R.string.status_disabled
+                    ),
+                    accent = if (careNotificationEnabled) AppColors.PrimaryGreen else AppColors.TextHint
+                )
+                StatusChip(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(R.string.status_family_notification),
+                    value = stringResource(
+                        if (familyEmail.isBlank()) R.string.status_not_configured
+                        else R.string.status_configured
+                    ),
+                    accent = if (familyEmail.isBlank()) AppColors.AccentAmber else AppColors.PrimaryGreen
+                )
+                StatusChip(
+                    modifier = Modifier.weight(1f),
+                    label = "Webhook",
+                    value = stringResource(
+                        if (gasWebhookUrl.isBlank()) R.string.status_default_value
+                        else R.string.status_custom_value
+                    ),
+                    accent = AppColors.TextSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String,
+    accent: Color
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(accent.copy(alpha = 0.10f))
+            .border(1.dp, accent.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        Column {
+            Text(
+                text = label,
+                color = AppColors.TextHint,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
+                color = accent,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -620,7 +680,7 @@ private fun sectionModifier(
         .border(
             width = 2.dp,
             color = if (highlighted) AppColors.PrimaryGreen.copy(alpha = 0.7f) else Color.Transparent,
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(16.dp)
         )
 }
 
@@ -649,13 +709,13 @@ private fun TutorialOverlay(
                     top = if (placeAtTop) 16.dp else 0.dp,
                     bottom = if (placeAtTop) 0.dp else 16.dp
                 )
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(22.dp))
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(AppColors.SurfaceMid, AppColors.SurfaceDark)
                     )
                 )
-                .border(1.dp, AppColors.PrimaryGreen.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                .border(1.dp, AppColors.PrimaryGreen.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
                 .padding(18.dp)
         ) {
             Column {
@@ -665,7 +725,7 @@ private fun TutorialOverlay(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "步驟 ${stepIndex + 1} / $totalSteps",
+                        text = stringResource(R.string.tutorial_step_format, stepIndex + 1, totalSteps),
                         color = AppColors.PrimaryGreen,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
@@ -697,25 +757,25 @@ private fun TutorialOverlay(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(AppColors.PrimaryGreen.copy(alpha = 0.10f))
                             .border(
                                 1.dp,
                                 AppColors.PrimaryGreen.copy(alpha = 0.28f),
-                                RoundedCornerShape(14.dp)
+                                RoundedCornerShape(16.dp)
                             )
                             .padding(12.dp)
                     ) {
                         Column {
                             Text(
-                                text = "最小可用組合",
+                                text = stringResource(R.string.tutorial_minimum_setup_title),
                                 color = AppColors.TextPrimary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "1. 名字\n2. 家人 Email\n3. 按下儲存",
+                                text = stringResource(R.string.tutorial_minimum_setup_steps),
                                 color = AppColors.TextSecondary,
                                 fontSize = 14.sp,
                                 lineHeight = 21.sp
@@ -732,7 +792,12 @@ private fun TutorialOverlay(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.TextSecondary)
                     ) {
-                        Text(if (stepIndex == 0) "先離開" else "上一步")
+                        Text(
+                            stringResource(
+                                if (stepIndex == 0) R.string.tutorial_leave_first
+                                else R.string.tutorial_previous
+                            )
+                        )
                     }
 
                     Button(
@@ -741,7 +806,10 @@ private fun TutorialOverlay(
                         colors = ButtonDefaults.buttonColors(containerColor = AppColors.PrimaryGreen)
                     ) {
                         Text(
-                            text = if (stepIndex == totalSteps - 1) "完成教學" else "下一步",
+                            text = stringResource(
+                                if (stepIndex == totalSteps - 1) R.string.tutorial_complete
+                                else R.string.tutorial_next
+                            ),
                             color = Color.White
                         )
                     }
@@ -754,7 +822,7 @@ private fun TutorialOverlay(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.TextSecondary)
                 ) {
-                    Text("關閉教學")
+                    Text(stringResource(R.string.tutorial_close))
                 }
             }
         }
@@ -787,7 +855,10 @@ private fun RequirementBadge(requirement: TutorialRequirement) {
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
-            text = if (requirement == TutorialRequirement.Required) "必要" else "可選",
+            text = stringResource(
+                if (requirement == TutorialRequirement.Required) R.string.tutorial_required
+                else R.string.tutorial_optional
+            ),
             color = textColor,
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp
@@ -803,13 +874,13 @@ private fun DarkCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(
                 Brush.linearGradient(
-                    listOf(AppColors.SurfaceMid.copy(alpha = 0.9f), AppColors.SurfaceLight.copy(alpha = 0.7f))
+                    listOf(AppColors.SurfaceMid.copy(alpha = 0.92f), AppColors.SurfaceLight.copy(alpha = 0.72f))
                 )
             )
-            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
     ) {
         content()
     }
@@ -819,16 +890,25 @@ private fun DarkCard(
 private fun SettingSection(
     modifier: Modifier = Modifier,
     highlighted: Boolean = false,
+    eyebrow: String,
     icon: String,
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
     DarkCard(modifier = modifier) {
         Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            Text(
+                text = eyebrow,
+                color = AppColors.TextHint,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
                         .background(AppColors.PrimaryGlow),
                     contentAlignment = Alignment.Center
@@ -838,9 +918,9 @@ private fun SettingSection(
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextSecondary
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.TextPrimary
                 )
                 if (highlighted) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -856,7 +936,7 @@ private fun SettingSection(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "請看這裡",
+                            text = stringResource(R.string.tutorial_highlight_badge),
                             color = AppColors.PrimaryGreen,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
@@ -864,7 +944,7 @@ private fun SettingSection(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             content()
         }
     }

@@ -17,6 +17,11 @@ class FamilyAlarmReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         val dataStore = AppDataStore(context)
 
+        if (!dataStore.shouldScheduleFamilyNotification() || !dataStore.shouldNotifyFamily()) {
+            pendingResult.finish()
+            return
+        }
+
         dataStore.addExecutionLog("家人通知排程已觸發，準備檢查是否需要寄信。")
 
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())

@@ -138,6 +138,13 @@ class AppDataStore(private val context: Context) {
         prefs.edit().putString(KEY_FAMILY_EMAIL, email.trim()).apply()
     }
 
+    fun hasCheckedIn(): Boolean = getLastCheckInTime() > 0L
+
+    fun hasFamilyNotificationRecipient(): Boolean = getFamilyEmail().isNotBlank()
+
+    fun shouldScheduleFamilyNotification(): Boolean =
+        hasCheckedIn() && hasFamilyNotificationRecipient()
+
     fun getFamilyRecipientTitle(): String {
         val title = prefs.getString(KEY_FAMILY_RECIPIENT_TITLE, DEFAULT_RECIPIENT_TITLE).orEmpty().trim()
         return if (title.isBlank()) DEFAULT_RECIPIENT_TITLE else title

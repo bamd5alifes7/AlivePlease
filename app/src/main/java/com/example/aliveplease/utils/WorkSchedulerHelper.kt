@@ -20,6 +20,22 @@ object WorkSchedulerHelper {
     private const val SLEEP_START_HOUR = 23
     private const val SLEEP_END_HOUR = 7
 
+    fun rescheduleAll(context: Context) {
+        val dataStore = AppDataStore(context)
+
+        if (dataStore.isCareNotificationOn()) {
+            scheduleNextCareNotification(context)
+        } else {
+            cancelCareNotification(context)
+        }
+
+        if (dataStore.shouldScheduleFamilyNotification()) {
+            scheduleFamilyNotification(context, dataStore.getTimeUntilFamilyNotification())
+        } else {
+            cancelFamilyNotification(context)
+        }
+    }
+
     fun scheduleFamilyNotification(context: Context, delayMillis: Long) {
         val dataStore = AppDataStore(context)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager

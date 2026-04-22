@@ -108,10 +108,14 @@ class MainActivity : ComponentActivity() {
 
         workManager.cancelUniqueWork("family_notification_check")
 
-        WorkSchedulerHelper.scheduleFamilyNotification(
-            this,
-            dataStore.getTimeUntilFamilyNotification()
-        )
+        if (dataStore.shouldScheduleFamilyNotification()) {
+            WorkSchedulerHelper.scheduleFamilyNotification(
+                this,
+                dataStore.getTimeUntilFamilyNotification()
+            )
+        } else {
+            WorkSchedulerHelper.cancelFamilyNotification(this)
+        }
     }
 }
 
@@ -147,7 +151,6 @@ fun AlivePleaseApp(
 
         composable("main") {
             MainScreen(
-                dataStore = dataStore,
                 onNavigateToSettings = {
                     navController.navigate("settings")
                 }
@@ -156,7 +159,6 @@ fun AlivePleaseApp(
 
         composable("settings") {
             SettingsScreen(
-                dataStore = dataStore,
                 onNavigateBack = {
                     navController.popBackStack()
                 },
@@ -172,7 +174,6 @@ fun AlivePleaseApp(
 
         composable("settings_tutorial") {
             SettingsScreen(
-                dataStore = dataStore,
                 onNavigateBack = {
                     navController.popBackStack()
                 },
