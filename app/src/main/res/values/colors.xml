@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#0D1B2A</color>
+    <color name="surface_dark">#112233</color>
+    <color name="surface_mid">#1A3045</color>
+    <color name="surface_light">#1E3A52</color>
+
+    <color name="primary">#00C896</color>
+    <color name="primary_dark">#00A87A</color>
+    <color name="primary_light">#4DFFC8</color>
+
+    <color name="secondary">#FFB830</color>
+    <color name="secondary_dark">#C88A00</color>
+    <color name="secondary_light">#FFD980</color>
+
+    <color name="text_primary">#ECF4FF</color>
+    <color name="text_secondary">#8BAAC5</color>
+    <color name="text_hint">#4E728E</color>
+
+    <color name="error">#FF6B6B</color>
+    <color name="success">#00C896</color>
+    <color name="warning">#FFB830</color>
+
+    <color name="launcher_background">#10263B</color>
+    <color name="launcher_panel">#163854</color>
+    <color name="launcher_heart">#00C896</color>
+    <color name="launcher_pulse">#ECF4FF</color>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

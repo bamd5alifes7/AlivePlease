@@ -1,0 +1,7 @@
+.gradle/
+build/
+app/build/
+local.properties
+build_output*.log
+.idea/workspace.xml
+.vscode/

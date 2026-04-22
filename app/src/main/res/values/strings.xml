@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Alive Please</string>
+
+    <string name="main_screen_title">Alive Please</string>
+    <string name="today_care_title">今天想對你說</string>
+    <string name="check_in_button">我還活著</string>
+    <string name="alive_days_label">累積活著天數</string>
+    <string name="alive_days_summary">%1$d 天</string>
+    <string name="family_notify_countdown_label">距離通知親友還有</string>
+    <string name="check_in_success">今天的報平安已記下來了</string>
+    <string name="settings">設定</string>
+    <string name="back">返回</string>
+
+    <string-array name="care_messages">
+        <item>今天也要記得照顧自己，好好吃飯。</item>
+        <item>如果有點累了，先休息一下也沒關係。</item>
+        <item>能平安度過今天，就已經很不容易了。</item>
+        <item>你不需要每一刻都很強，慢慢來就好。</item>
+        <item>就算只前進一點點，那也是真實的進步。</item>
+        <item>別忘了，你值得被關心，也值得被等待。</item>
+        <item>如果今天很難，就先把自己照顧好。</item>
+        <item>願你今天平安，也願你知道有人在意你。</item>
+    </string-array>
+
+    <string name="settings_title">設定</string>
+    <string name="user_name_title">你的名字</string>
+    <string name="user_name_hint">例如：小明、阿哲</string>
+    <string name="check_in_interval">打卡提醒間隔</string>
+    <string name="family_notify_interval">多久沒打卡就通知親友</string>
+    <string name="family_email">通知對象 Email</string>
+    <string name="family_recipient_title">信件中的稱呼</string>
+    <string name="family_recipient_hint">例如：媽媽、姐姐、阿姨、親愛的家人</string>
+    <string name="family_recipient_supporting">留白時會自動使用「親愛的家人」。</string>
+    <string name="care_notification_toggle">開啟隨機關心通知</string>
+    <string name="save_settings">儲存設定</string>
+    <string name="settings_saved">設定已更新</string>
+    <string name="hours">小時</string>
+    <string name="email_hint">請輸入收件人的 Email</string>
+    <string name="invalid_email">Email 格式看起來不正確</string>
+    <string name="webhook_title">GAS Webhook URL</string>
+    <string name="webhook_hint">貼上可用的 Webhook URL</string>
+    <string name="send_test_email">發送測試信</string>
+    <string name="test_email_missing_fields">請先填入 Webhook URL 和收件人 Email。</string>
+    <string name="test_email_sending">正在寄送測試信…</string>
+    <string name="test_email_success">測試信寄送成功。</string>
+    <string name="test_email_failed">測試信寄送失敗，請再檢查設定。</string>
+    <string name="open_logs">查看執行紀錄</string>
+
+    <string name="notification_channel_checkin_name">打卡提醒</string>
+    <string name="notification_channel_checkin_desc">提醒你打開 App 報平安。</string>
+    <string name="notification_channel_care_name">關心通知</string>
+    <string name="notification_channel_care_desc">偶爾提醒你照顧自己。</string>
+    <string name="notification_channel_family_status_name">親友通知結果</string>
+    <string name="notification_channel_family_status_desc">在寄出親友通知信後告訴你成功或失敗。</string>
+    <string name="notification_checkin_title">別忘了報平安</string>
+    <string name="notification_checkin_message">打開 Alive Please，讓在意你的人知道你今天還好。</string>
+    <string name="notification_care_title">給你的小提醒</string>
+    <string name="notification_family_status_success_title">我替你把消息送出了</string>
+    <string name="notification_family_status_success_message">剛剛已順利寄信到 %1$s，讓對方知道該留意一下你。</string>
+    <string name="notification_family_status_failure_title">這次沒能順利通知親友</string>
+    <string name="notification_family_status_failure_message">剛剛想寄信到 %1$s，但沒有成功送出。打開 App 看看設定或執行紀錄吧。</string>
+
+    <string name="time_format_days">%1$d 天</string>
+    <string name="time_format_hours">%1$d 小時</string>
+    <string name="time_format_minutes">%1$d 分鐘</string>
+    <string name="time_format_seconds">%1$d 秒</string>
+    <string name="time_format_hours_minutes">%1$d 小時 %2$d 分鐘</string>
+    <string name="time_format_days_hours">%1$d 天 %2$d 小時</string>
+    <string name="time_format_hours_minutes_seconds">%1$d 小時 %2$d 分鐘 %3$d 秒</string>
+    <string name="time_format_minutes_seconds">%1$d 分鐘 %2$d 秒</string>
+</resources>
