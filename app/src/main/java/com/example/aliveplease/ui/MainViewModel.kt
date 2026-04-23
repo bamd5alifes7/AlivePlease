@@ -36,9 +36,11 @@ class MainViewModel(
 
     private var feedbackJob: Job? = null
     private var celebrationJob: Job? = null
+    private var careMessageJob: Job? = null
 
     init {
         startCountdownUpdates()
+        startCareMessageRotation()
     }
 
     fun performCheckIn() {
@@ -67,11 +69,25 @@ class MainViewModel(
         }
     }
 
+    fun refreshCareMessage() {
+        uiState = uiState.copy(careMessage = randomCareMessage(excluding = uiState.careMessage))
+    }
+
     private fun startCountdownUpdates() {
         viewModelScope.launch {
             while (isActive) {
                 uiState = uiState.copy(countdown = dataStore.getTimeUntilFamilyNotification())
                 delay(1000)
+            }
+        }
+    }
+
+    private fun startCareMessageRotation() {
+        careMessageJob?.cancel()
+        careMessageJob = viewModelScope.launch {
+            while (isActive) {
+                delay(60_000)
+                uiState = uiState.copy(careMessage = randomCareMessage(excluding = uiState.careMessage))
             }
         }
     }
@@ -93,9 +109,17 @@ class MainViewModel(
         return if (remainder == 0) 3 else 3 - remainder
     }
 
-    private fun randomCareMessage(): String {
+    private fun randomCareMessage(excluding: String? = null): String {
         val messages = appContext.resources.getStringArray(R.array.care_messages)
-        return messages.random()
+        if (messages.isEmpty()) {
+            return ""
+        }
+
+        val candidates = excluding?.let { current ->
+            messages.filterNot { it == current }
+        } ?: messages.toList()
+
+        return (if (candidates.isNotEmpty()) candidates else messages.toList()).random()
     }
 
     private fun getCelebrationMessage(streakDays: Int): String {
