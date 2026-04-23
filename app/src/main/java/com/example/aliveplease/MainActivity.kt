@@ -7,10 +7,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
@@ -29,6 +34,7 @@ import com.example.aliveplease.ui.SettingsScreen
 import com.example.aliveplease.ui.theme.AppColors
 import com.example.aliveplease.workers.CheckInReminderWorker
 import com.example.aliveplease.utils.WorkSchedulerHelper
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -119,13 +125,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AlivePleaseApp(
     dataStore: AppDataStore,
     onSettingsSaved: () -> Unit
 ) {
     val navController = rememberNavController()
-    val startDestination = if (dataStore.isFirstLaunch()) "onboarding" else "main"
+    val startDestination = if (dataStore.isFirstLaunch()) "onboarding" else "home"
 
     NavHost(
         navController = navController,
@@ -135,33 +142,49 @@ fun AlivePleaseApp(
             OnboardingScreen(
                 onPrimaryAction = {
                     dataStore.setFirstLaunchCompleted()
-                    navController.navigate("main") {
+                    navController.navigate("home") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                     navController.navigate("settings_tutorial")
                 },
                 onSecondaryAction = {
                     dataStore.setFirstLaunchCompleted()
-                    navController.navigate("main") {
+                    navController.navigate("home") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                 }
             )
         }
 
+        composable("home") {
+            HomePagerScreen(
+                initialPage = 0,
+                onSettingsSaved = onSettingsSaved,
+                onNavigateToLogs = {
+                    navController.navigate("logs")
+                },
+                onReplayOnboarding = {
+                    navController.navigate("settings_tutorial")
+                }
+            )
+        }
+
         composable("main") {
-            MainScreen(
-                onNavigateToSettings = {
-                    navController.navigate("settings")
+            HomePagerScreen(
+                initialPage = 0,
+                onSettingsSaved = onSettingsSaved,
+                onNavigateToLogs = {
+                    navController.navigate("logs")
+                },
+                onReplayOnboarding = {
+                    navController.navigate("settings_tutorial")
                 }
             )
         }
 
         composable("settings") {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+            HomePagerScreen(
+                initialPage = 1,
                 onSettingsSaved = onSettingsSaved,
                 onNavigateToLogs = {
                     navController.navigate("logs")
@@ -193,6 +216,48 @@ fun AlivePleaseApp(
                     navController.popBackStack()
                 }
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun HomePagerScreen(
+    initialPage: Int,
+    onSettingsSaved: () -> Unit,
+    onNavigateToLogs: () -> Unit,
+    onReplayOnboarding: () -> Unit
+) {
+    val pagerState = rememberPagerState(
+        initialPage = initialPage,
+        pageCount = { 2 }
+    )
+    val scope = rememberCoroutineScope()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            when (page) {
+                0 -> MainScreen(
+                    onNavigateToSettings = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    }
+                )
+                1 -> SettingsScreen(
+                    onNavigateBack = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(0)
+                        }
+                    },
+                    onSettingsSaved = onSettingsSaved,
+                    onNavigateToLogs = onNavigateToLogs,
+                    onReplayOnboarding = onReplayOnboarding
+                )
+            }
         }
     }
 }

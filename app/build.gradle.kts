@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val apkBaseName = rootProject.name
+
 android {
     namespace = "com.example.aliveplease"
     compileSdk = 34
@@ -52,6 +54,15 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    applicationVariants.all {
+        outputs.all {
+            val apkFileName = "${apkBaseName}_${versionName ?: "dev"}_${name}.apk"
+            @Suppress("UNCHECKED_CAST")
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                apkFileName
+        }
+    }
 }
 
 dependencies {
@@ -67,6 +78,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material:material")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     

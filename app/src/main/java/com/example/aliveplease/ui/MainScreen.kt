@@ -35,6 +35,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,8 +71,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aliveplease.R
 import com.example.aliveplease.ui.theme.AppColors
 import com.example.aliveplease.utils.TimeFormatter
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     onNavigateToSettings: () -> Unit
@@ -77,6 +82,14 @@ fun MainScreen(
     val viewModel: MainViewModel = viewModel(factory = MainViewModel.factory(context))
     val uiState = viewModel.uiState
     var buttonPressed by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            viewModel.refreshCareMessage()
+        }
+    )
 
     val buttonScale by animateFloatAsState(
         targetValue = if (buttonPressed) 0.94f else 1f,
@@ -109,6 +122,13 @@ fun MainScreen(
 
     LaunchedEffect(Unit) {
         viewModel.refreshCareMessage()
+    }
+
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            delay(450)
+            isRefreshing = false
+        }
     }
 
     Scaffold(
@@ -150,6 +170,7 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .pullRefresh(pullRefreshState)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -354,6 +375,14 @@ fun MainScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+
+            PullRefreshIndicator(
+                refreshing = isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                backgroundColor = AppColors.SurfaceMid,
+                contentColor = AppColors.PrimaryGreen
+            )
         }
     }
 }
