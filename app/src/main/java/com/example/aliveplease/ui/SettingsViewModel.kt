@@ -20,8 +20,12 @@ data class SettingsUiState(
     val familyRecipientTitle: String = "",
     val gasWebhookUrl: String = "",
     val careNotificationEnabled: Boolean = false,
+    val quietHoursEnabled: Boolean = true,
+    val quietHoursStart: String = "",
+    val quietHoursEnd: String = "",
     val showSaveMessage: Boolean = false,
     val emailError: Boolean = false,
+    val quietHoursError: Boolean = false,
     val tutorialStepIndex: Int = -1
 )
 
@@ -49,6 +53,9 @@ class SettingsViewModel(
                 .orEmpty(),
             gasWebhookUrl = dataStore.getStoredGasWebhookUrl(),
             careNotificationEnabled = dataStore.isCareNotificationOn(),
+            quietHoursEnabled = dataStore.isQuietHoursEnabled(),
+            quietHoursStart = formatMinutes(dataStore.getQuietHoursStartMinutes()),
+            quietHoursEnd = formatMinutes(dataStore.getQuietHoursEndMinutes()),
             tutorialStepIndex = if (tutorialMode) 0 else -1
         )
     }
@@ -79,6 +86,18 @@ class SettingsViewModel(
 
     fun onCareNotificationEnabledChanged(enabled: Boolean) {
         uiState = uiState.copy(careNotificationEnabled = enabled)
+    }
+
+    fun onQuietHoursEnabledChanged(enabled: Boolean) {
+        uiState = uiState.copy(quietHoursEnabled = enabled, quietHoursError = false)
+    }
+
+    fun onQuietHoursStartChanged(value: String) {
+        uiState = uiState.copy(quietHoursStart = value, quietHoursError = false)
+    }
+
+    fun onQuietHoursEndChanged(value: String) {
+        uiState = uiState.copy(quietHoursEnd = value, quietHoursError = false)
     }
 
     fun onSaveMessageShown() {
@@ -148,6 +167,12 @@ class SettingsViewModel(
             uiState = uiState.copy(emailError = true)
             return false
         }
+        val quietStartMinutes = parseTimeToMinutes(state.quietHoursStart)
+        val quietEndMinutes = parseTimeToMinutes(state.quietHoursEnd)
+        if (quietStartMinutes == null || quietEndMinutes == null) {
+            uiState = uiState.copy(quietHoursError = true)
+            return false
+        }
 
         state.userName.trim().takeIf { it.isNotBlank() }?.let(dataStore::setUserName)
         state.checkInInterval.toLongOrNull()?.takeIf { it > 0 }?.let(dataStore::setNotifyInterval)
@@ -156,9 +181,31 @@ class SettingsViewModel(
         dataStore.setFamilyRecipientTitle(state.familyRecipientTitle)
         dataStore.setGasWebhookUrl(state.gasWebhookUrl)
         dataStore.setCareNotificationOn(state.careNotificationEnabled)
+        dataStore.setQuietHoursEnabled(state.quietHoursEnabled)
+        dataStore.setQuietHoursStartMinutes(quietStartMinutes)
+        dataStore.setQuietHoursEndMinutes(quietEndMinutes)
 
         uiState = uiState.copy(showSaveMessage = true)
         return true
+    }
+
+    private fun parseTimeToMinutes(value: String): Int? {
+        val trimmed = value.trim()
+        if (!Regex("""\d{2}:\d{2}""").matches(trimmed)) return null
+
+        val parts = trimmed.split(":")
+        if (parts.size != 2) return null
+
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+        if (hour !in 0..23 || minute !in 0..59) return null
+
+        return hour * 60 + minute
+    }
+
+    private fun formatMinutes(minutes: Int): String {
+        val normalized = minutes.coerceIn(0, 23 * 60 + 59)
+        return "%02d:%02d".format(normalized / 60, normalized % 60)
     }
 
     companion object {

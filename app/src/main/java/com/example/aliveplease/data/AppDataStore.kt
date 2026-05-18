@@ -27,12 +27,17 @@ class AppDataStore(private val context: Context) {
         private const val KEY_FAMILY_RECIPIENT_TITLE = "family_recipient_title"
         private const val KEY_GAS_WEBHOOK_URL = "gas_webhook_url"
         private const val KEY_CARE_NOTIFICATION_ON = "care_notification_on"
+        private const val KEY_QUIET_HOURS_ENABLED = "quiet_hours_enabled"
+        private const val KEY_QUIET_HOURS_START_MINUTES = "quiet_hours_start_minutes"
+        private const val KEY_QUIET_HOURS_END_MINUTES = "quiet_hours_end_minutes"
         private const val KEY_EXECUTION_LOGS = "execution_logs"
         private const val KEY_IS_FIRST_LAUNCH = "is_first_launch"
         private const val KEY_USER_NAME = "user_name"
 
         private const val DEFAULT_NOTIFY_INTERVAL = 24L
         private const val DEFAULT_FAMILY_NOTIFY_INTERVAL = 48L
+        private const val DEFAULT_QUIET_HOURS_START_MINUTES = 23 * 60
+        private const val DEFAULT_QUIET_HOURS_END_MINUTES = 7 * 60
         private const val DEFAULT_GAS_WEBHOOK_URL =
             "https://script.google.com/macros/s/AKfycbyYVX3a8BrAozR3UMfjrgiYmHaKePvgCw6BkULBIPav5bYbF4Ij8abvl-BXp2eOJBTC/exec"
         private const val DEFAULT_USER_NAME = "我"
@@ -170,6 +175,26 @@ class AppDataStore(private val context: Context) {
 
     fun setCareNotificationOn(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_CARE_NOTIFICATION_ON, enabled).apply()
+    }
+
+    fun isQuietHoursEnabled(): Boolean = prefs.getBoolean(KEY_QUIET_HOURS_ENABLED, true)
+
+    fun setQuietHoursEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_QUIET_HOURS_ENABLED, enabled).apply()
+    }
+
+    fun getQuietHoursStartMinutes(): Int =
+        prefs.getInt(KEY_QUIET_HOURS_START_MINUTES, DEFAULT_QUIET_HOURS_START_MINUTES)
+
+    fun setQuietHoursStartMinutes(minutes: Int) {
+        prefs.edit().putInt(KEY_QUIET_HOURS_START_MINUTES, minutes.coerceIn(0, 23 * 60 + 59)).apply()
+    }
+
+    fun getQuietHoursEndMinutes(): Int =
+        prefs.getInt(KEY_QUIET_HOURS_END_MINUTES, DEFAULT_QUIET_HOURS_END_MINUTES)
+
+    fun setQuietHoursEndMinutes(minutes: Int) {
+        prefs.edit().putInt(KEY_QUIET_HOURS_END_MINUTES, minutes.coerceIn(0, 23 * 60 + 59)).apply()
     }
 
     fun getUserName(): String {

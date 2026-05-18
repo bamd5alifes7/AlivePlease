@@ -2,6 +2,7 @@ package com.example.aliveplease.data
 
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,5 +46,12 @@ class AppDataStoreTest {
         dataStore.performCheckIn()
 
         assertTrue(dataStore.shouldScheduleFamilyNotification())
+    }
+
+    @Test
+    fun quietHours_defaultsToEnabledFrom2300To0700() {
+        assertTrue(dataStore.isQuietHoursEnabled())
+        assertEquals(23 * 60, dataStore.getQuietHoursStartMinutes())
+        assertEquals(7 * 60, dataStore.getQuietHoursEndMinutes())
     }
 }

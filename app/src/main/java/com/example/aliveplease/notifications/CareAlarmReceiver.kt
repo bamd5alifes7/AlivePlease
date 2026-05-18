@@ -16,6 +16,13 @@ class CareAlarmReceiver : BroadcastReceiver() {
             return
         }
 
+        if (WorkSchedulerHelper.isInQuietHours(dataStore)) {
+            val quietEndMillis = WorkSchedulerHelper.nextQuietHoursEndMillis(dataStore)
+            WorkSchedulerHelper.scheduleCareNotificationAt(context, quietEndMillis)
+            dataStore.addExecutionLog("關懷提醒遇到安靜時段，已延後到安靜時段結束。")
+            return
+        }
+
         val message = NotificationHelper.getRandomCareMessage(context)
         NotificationHelper.sendCareMessage(context, message)
         dataStore.addExecutionLog("已送出一則關懷提醒，接著安排下一次隨機提醒。")

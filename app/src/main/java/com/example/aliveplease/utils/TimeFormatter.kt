@@ -11,7 +11,7 @@ object TimeFormatter {
     /**
      * 格式化倒數時間
      * @param milliseconds 毫秒數
-     * @return 格式化的時間字串，例如 "23小時15分鐘" 或 "1天5小時"
+     * @return 格式化的時間字串，例如 "23小時15分鐘" 或 "1天5小時3分鐘8秒"
      */
     fun formatCountdown(context: Context, milliseconds: Long): String {
         if (milliseconds <= 0) {
@@ -25,15 +25,17 @@ object TimeFormatter {
         
         val displaySeconds = totalSeconds % 60
         val displayMinutes = totalMinutes % 60
+        val displayHours = totalHours % 24
         
         return when {
             days > 0 -> {
-                val remainingHours = totalHours % 24
-                if (remainingHours > 0) {
-                    context.getString(R.string.time_format_days_hours, days, remainingHours)
-                } else {
-                    context.getString(R.string.time_format_days, days)
-                }
+                context.getString(
+                    R.string.time_format_days_hours_minutes_seconds,
+                    days,
+                    displayHours,
+                    displayMinutes,
+                    displaySeconds
+                )
             }
             totalHours > 0 -> {
                 if (displaySeconds > 0) {

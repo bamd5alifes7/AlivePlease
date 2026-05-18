@@ -239,6 +239,75 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = sectionModifier(currentStep?.key, null, tutorialMode),
+                    eyebrow = stringResource(R.string.reminder_pacing_section),
+                    icon = "Z",
+                    title = stringResource(R.string.quiet_hours_title)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.quiet_hours_enabled_label),
+                            color = AppColors.TextSecondary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Switch(
+                            checked = uiState.quietHoursEnabled,
+                            onCheckedChange = viewModel::onQuietHoursEnabledChanged,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AppColors.PrimaryGreen,
+                                uncheckedThumbColor = AppColors.TextHint,
+                                uncheckedTrackColor = AppColors.SurfaceMid
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(
+                            value = uiState.quietHoursStart,
+                            onValueChange = viewModel::onQuietHoursStartChanged,
+                            modifier = Modifier.weight(1f),
+                            label = { Text(stringResource(R.string.quiet_hours_start_label)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                            singleLine = true,
+                            isError = uiState.quietHoursError,
+                            enabled = uiState.quietHoursEnabled,
+                            colors = fieldColors
+                        )
+                        OutlinedTextField(
+                            value = uiState.quietHoursEnd,
+                            onValueChange = viewModel::onQuietHoursEndChanged,
+                            modifier = Modifier.weight(1f),
+                            label = { Text(stringResource(R.string.quiet_hours_end_label)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                            singleLine = true,
+                            isError = uiState.quietHoursError,
+                            enabled = uiState.quietHoursEnabled,
+                            colors = fieldColors
+                        )
+                    }
+
+                    Text(
+                        text = if (uiState.quietHoursError) {
+                            stringResource(R.string.quiet_hours_error)
+                        } else {
+                            stringResource(R.string.quiet_hours_description)
+                        },
+                        color = if (uiState.quietHoursError) AppColors.Error else AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+                }
+
+                SettingSection(
+                    modifier = sectionModifier(currentStep?.key, null, tutorialMode),
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "2",
                     title = stringResource(R.string.family_wait_time_title)

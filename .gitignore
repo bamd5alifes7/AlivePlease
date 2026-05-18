@@ -6,4 +6,5 @@ local.properties
 build_output*.log
 .idea/workspace.xml
 .idea/deploymentTargetDropDown.xml
+.idea/vcs.xml
 .vscode/
