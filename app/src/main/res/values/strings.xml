@@ -82,8 +82,8 @@
     <string name="tutorial_user_name_description">這個名字會出現在通知與寄信內容裡，讓收到訊息的人知道是誰。</string>
     <string name="tutorial_family_email_title">填入家人 Email</string>
     <string name="tutorial_family_email_description">如果你太久沒有報平安，系統就會寄信到這個地址。</string>
-    <string name="tutorial_webhook_title">Webhook 可先用預設值</string>
-    <string name="tutorial_webhook_description">這欄留空會自動使用內建 GAS。你也可以在這裡按測試寄信。</string>
+    <string name="tutorial_webhook_title">GAS Webhook 可先用預設值</string>
+    <string name="tutorial_webhook_description">GAS 是 Google Apps Script，這裡用它做成 Webhook，讓 Alive Please 可以寄出親友通知信。這欄留空會先使用內建 GAS；想自己部署時，可以到 https://github.com/bamd5alifes7/AlivePlease 取得 GAS 範本。</string>
     <string name="tutorial_care_toggle_title">決定是否開啟關懷提醒</string>
     <string name="tutorial_care_toggle_description">打開後，系統會以 4 到 8 小時的隨機間隔提醒你；若遇到安靜時段，會自動延後。</string>
     <string name="tutorial_save_title">最後記得儲存設定</string>
