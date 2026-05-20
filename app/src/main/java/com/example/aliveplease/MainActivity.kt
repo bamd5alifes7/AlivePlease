@@ -34,6 +34,9 @@ import com.example.aliveplease.ui.SettingsScreen
 import com.example.aliveplease.ui.theme.AppColors
 import com.example.aliveplease.workers.CheckInReminderWorker
 import com.example.aliveplease.utils.WorkSchedulerHelper
+import com.google.android.gms.ads.MobileAds
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -56,6 +59,9 @@ class MainActivity : ComponentActivity() {
         NotificationHelper.createNotificationChannels(this)
         requestNotificationPermission()
         scheduleWorkers()
+        CoroutineScope(Dispatchers.IO).launch {
+            MobileAds.initialize(this@MainActivity) {}
+        }
 
         setContent {
             MaterialTheme {

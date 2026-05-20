@@ -1,13 +1,14 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 val apkBaseName = rootProject.name
 
 android {
     namespace = "com.example.aliveplease"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.aliveplease"
@@ -40,9 +41,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
     }
     testOptions {
         unitTests {
@@ -93,6 +91,9 @@ dependencies {
     
     // OkHttp for networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Google Mobile Ads
+    implementation("com.google.android.gms:play-services-ads:25.2.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test:core:1.5.0")

@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aliveplease.R
+import com.example.aliveplease.ui.components.AdMobBanner
 import com.example.aliveplease.ui.theme.AppColors
 import com.example.aliveplease.utils.TimeFormatter
 import kotlinx.coroutines.delay
@@ -164,6 +165,9 @@ fun MainScreen(
                     containerColor = AppColors.SurfaceDark
                 )
             )
+        },
+        bottomBar = {
+            AdMobBanner()
         },
         containerColor = AppColors.Background
     ) { paddingValues ->
