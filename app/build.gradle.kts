@@ -6,11 +6,11 @@ plugins {
 val apkBaseName = rootProject.name
 
 android {
-    namespace = "com.example.aliveplease"
+    namespace = "com.orenhui.aliveplease"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.aliveplease"
+        applicationId = "com.orenhui.aliveplease"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
