@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -76,6 +77,7 @@ fun SettingsScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(context))
     val uiState = viewModel.uiState
+    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
@@ -121,7 +123,12 @@ fun SettingsScreen(
 
         return baseModifier.then(
             Modifier.onGloballyPositioned { coordinates ->
-                val target = (coordinates.positionInRoot().y + scrollState.value - 96)
+                val targetOffset = when (sectionKey) {
+                    TutorialKey.CareToggle -> with(density) { 300.dp.roundToPx() }
+                    TutorialKey.Save -> with(density) { 380.dp.roundToPx() }
+                    else -> 96
+                }
+                val target = (coordinates.positionInRoot().y + scrollState.value - targetOffset)
                     .roundToInt()
                     .coerceAtLeast(0)
                 tutorialTargetPositions[sectionKey] = target
