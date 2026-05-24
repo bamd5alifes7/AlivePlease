@@ -46,14 +46,12 @@ class SettingsViewModel(
     fun reloadState(tutorialMode: Boolean) {
         val current = dataStore.getFamilyNotifyIntervalFloat()
         uiState = SettingsUiState(
-            userName = dataStore.getUserName().takeUnless { it == "??" }.orEmpty(),
+            userName = dataStore.getUserName(),
             checkInInterval = dataStore.getNotifyInterval().toString(),
             familyInterval = if (current % 1 == 0f) current.toInt().toString() else current.toString(),
             familyWarningBefore = formatHours(dataStore.getFamilyWarningBeforeHours()),
             familyEmail = dataStore.getFamilyEmail(),
-            familyRecipientTitle = dataStore.getFamilyRecipientTitle()
-                .takeUnless { it.contains("??") }
-                .orEmpty(),
+            familyRecipientTitle = dataStore.getFamilyRecipientTitle(),
             gasWebhookUrl = dataStore.getStoredGasWebhookUrl(),
             careNotificationEnabled = dataStore.isCareNotificationOn(),
             quietHoursEnabled = dataStore.isQuietHoursEnabled(),

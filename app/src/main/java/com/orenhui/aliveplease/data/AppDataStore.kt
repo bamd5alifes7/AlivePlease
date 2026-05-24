@@ -4,8 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.orenhui.aliveplease.utils.WorkSchedulerHelper
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -45,7 +44,7 @@ class AppDataStore(private val context: Context) {
         private const val DEFAULT_USER_NAME = "我"
         private const val DEFAULT_RECIPIENT_TITLE = "親愛的家人"
 
-        private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+        private const val DATE_PATTERN = "yyyy-MM-dd"
     }
 
     fun getLastCheckInTime(): Long = prefs.getLong(KEY_LAST_CHECK_IN_TIME, 0L)
@@ -77,20 +76,20 @@ class AppDataStore(private val context: Context) {
 
     fun getCurrentStreak(): Int {
         val parsedDates = getCheckInDates()
-            .mapNotNull { runCatching { LocalDate.parse(it, DATE_FORMATTER) }.getOrNull() }
+            .mapNotNull(::parseCheckInDateMillis)
             .sortedDescending()
 
         if (parsedDates.isEmpty()) return 0
 
         var streak = 1
-        var expectedPreviousDate = parsedDates.first().minusDays(1)
+        var expectedPreviousDate = minusOneDay(parsedDates.first())
 
         for (index in 1 until parsedDates.size) {
             val current = parsedDates[index]
             if (current == expectedPreviousDate) {
                 streak += 1
-                expectedPreviousDate = expectedPreviousDate.minusDays(1)
-            } else if (current.isBefore(expectedPreviousDate)) {
+                expectedPreviousDate = minusOneDay(expectedPreviousDate)
+            } else if (current < expectedPreviousDate) {
                 break
             }
         }
@@ -112,8 +111,22 @@ class AppDataStore(private val context: Context) {
     }
 
     private fun getTodayDateString(): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dateFormat = SimpleDateFormat(DATE_PATTERN, Locale.getDefault())
         return dateFormat.format(Date())
+    }
+
+    private fun parseCheckInDateMillis(value: String): Long? {
+        val dateFormat = SimpleDateFormat(DATE_PATTERN, Locale.getDefault()).apply {
+            isLenient = false
+        }
+        return runCatching { dateFormat.parse(value)?.time }.getOrNull()
+    }
+
+    private fun minusOneDay(timeMillis: Long): Long {
+        return Calendar.getInstance().apply {
+            this.timeInMillis = timeMillis
+            add(Calendar.DAY_OF_YEAR, -1)
+        }.timeInMillis
     }
 
     fun getNotifyInterval(): Long = prefs.getLong(KEY_NOTIFY_INTERVAL, DEFAULT_NOTIFY_INTERVAL)

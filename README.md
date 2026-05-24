@@ -20,3 +20,24 @@ Alive Please 是一個以 Android 製作的報平安 App。
 ## 畫面展示
 
 <img src="./screenshots/home.png" alt="Home" width="320" />
+
+## Play Store 發佈
+
+Play Console 上架請使用 Android App Bundle：
+
+```powershell
+./gradlew.bat :app:bundleRelease
+```
+
+產物會在 `app/build/outputs/bundle/release/app-release.aab`。
+
+Release 簽章資訊請放在不會進 Git 的 `local.properties`：
+
+```properties
+RELEASE_STORE_FILE=C:\\path\\to\\aliveplease-upload.jks
+RELEASE_STORE_PASSWORD=your-store-password
+RELEASE_KEY_ALIAS=your-key-alias
+RELEASE_KEY_PASSWORD=your-key-password
+```
+
+未設定上述欄位時仍可產出測試用 AAB，但檔案不會有上傳 Play Console 所需的 release 簽章。

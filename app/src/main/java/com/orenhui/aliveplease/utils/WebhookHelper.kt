@@ -72,7 +72,6 @@ object WebhookHelper {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
                 EmailSendResult(
                     success = false,
                     message = e.message ?: "Unknown error."

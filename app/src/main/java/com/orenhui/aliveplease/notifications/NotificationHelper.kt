@@ -175,7 +175,7 @@ object NotificationHelper {
         try {
             NotificationManagerCompat.from(context).notify(id, notification)
         } catch (e: SecurityException) {
-            e.printStackTrace()
+            // Notification permission can be revoked after scheduling.
         }
     }
 }

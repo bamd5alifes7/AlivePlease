@@ -3,6 +3,8 @@ build/
 app/build/
 app/release/
 local.properties
+*.jks
+*.keystore
 build_output*.log
 .idea/workspace.xml
 .idea/deploymentTargetDropDown.xml

@@ -66,7 +66,7 @@
     <string name="webhook_description">Alive Please 已經準備好寄送 Email 的設定。只有想自行架設寄信服務的進階使用者，才需要參考文件並填入自己的設定網址。</string>
     <string name="open_gas_docs">進階 GAS 文件</string>
     <string name="missing_family_email">先填入想通知的 Email，我才知道要寄給誰。</string>
-    <string name="sending_test_email">正在幫你寄測試 Email...</string>
+    <string name="sending_test_email">正在幫你寄測試 Email…</string>
     <string name="test_email_sent">測試 Email 已送出，等一下可以確認信箱。</string>
     <string name="test_email_failed_short">測試 Email 暫時沒有送出去，我們再檢查一下設定。</string>
     <string name="care_toggle_title">開啟關懷提醒</string>
