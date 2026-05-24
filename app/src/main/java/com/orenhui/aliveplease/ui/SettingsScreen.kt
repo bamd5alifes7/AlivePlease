@@ -1,5 +1,7 @@
 package com.orenhui.aliveplease.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -96,10 +98,28 @@ fun SettingsScreen(
             requirement = TutorialRequirement.Required
         ),
         TutorialStep(
+            key = TutorialKey.CheckInInterval,
+            title = stringResource(R.string.tutorial_check_in_interval_title),
+            description = stringResource(R.string.tutorial_check_in_interval_description),
+            requirement = TutorialRequirement.Required
+        ),
+        TutorialStep(
+            key = TutorialKey.FamilyInterval,
+            title = stringResource(R.string.tutorial_family_interval_title),
+            description = stringResource(R.string.tutorial_family_interval_description),
+            requirement = TutorialRequirement.Required
+        ),
+        TutorialStep(
             key = TutorialKey.FamilyEmail,
             title = stringResource(R.string.tutorial_family_email_title),
             description = stringResource(R.string.tutorial_family_email_description),
             requirement = TutorialRequirement.Required
+        ),
+        TutorialStep(
+            key = TutorialKey.RecipientTitle,
+            title = stringResource(R.string.tutorial_recipient_title_title),
+            description = stringResource(R.string.tutorial_recipient_title_description),
+            requirement = TutorialRequirement.Optional
         ),
         TutorialStep(
             key = TutorialKey.CareToggle,
@@ -108,10 +128,32 @@ fun SettingsScreen(
             requirement = TutorialRequirement.Optional
         ),
         TutorialStep(
+            key = TutorialKey.QuietHours,
+            title = stringResource(R.string.tutorial_quiet_hours_title),
+            description = stringResource(R.string.tutorial_quiet_hours_description),
+            requirement = TutorialRequirement.Optional
+        ),
+        TutorialStep(
+            key = TutorialKey.Webhook,
+            title = stringResource(R.string.tutorial_webhook_title),
+            description = stringResource(R.string.tutorial_webhook_description),
+            requirement = TutorialRequirement.Optional
+        ),
+        TutorialStep(
+            key = TutorialKey.TestAndLogs,
+            title = stringResource(R.string.tutorial_test_and_logs_title),
+            description = stringResource(R.string.tutorial_test_and_logs_description),
+            requirement = TutorialRequirement.Optional,
+            overlayPlacement = TutorialOverlayPlacement.Top,
+            focusOffsetDp = 430
+        ),
+        TutorialStep(
             key = TutorialKey.Save,
             title = stringResource(R.string.tutorial_save_title),
             description = stringResource(R.string.tutorial_save_description),
-            requirement = TutorialRequirement.Required
+            requirement = TutorialRequirement.Required,
+            overlayPlacement = TutorialOverlayPlacement.Top,
+            focusOffsetDp = 640
         )
     )
     val currentStep = tutorialSteps.getOrNull(uiState.tutorialStepIndex)
@@ -123,12 +165,10 @@ fun SettingsScreen(
 
         return baseModifier.then(
             Modifier.onGloballyPositioned { coordinates ->
-                val targetOffset = when (sectionKey) {
-                    TutorialKey.CareToggle -> with(density) { 300.dp.roundToPx() }
-                    TutorialKey.Save -> with(density) { 380.dp.roundToPx() }
-                    else -> 96
-                }
-                val target = (coordinates.positionInRoot().y + scrollState.value - targetOffset)
+                val focusOffset = currentStep?.takeIf { it.key == sectionKey }?.focusOffsetDp ?: 148
+                val target = (coordinates.positionInRoot().y + scrollState.value - with(density) {
+                    focusOffset.dp.roundToPx()
+                })
                     .roundToInt()
                     .coerceAtLeast(0)
                 tutorialTargetPositions[sectionKey] = target
@@ -241,7 +281,8 @@ fun SettingsScreen(
                 }
 
                 SettingSection(
-                    modifier = tutorialSectionModifier(null),
+                    modifier = tutorialSectionModifier(TutorialKey.CheckInInterval),
+                    highlighted = currentStep?.key == TutorialKey.CheckInInterval && tutorialMode,
                     eyebrow = stringResource(R.string.reminder_pacing_section),
                     icon = "1",
                     title = stringResource(R.string.check_in_interval)
@@ -258,7 +299,8 @@ fun SettingsScreen(
                 }
 
                 SettingSection(
-                    modifier = tutorialSectionModifier(null),
+                    modifier = tutorialSectionModifier(TutorialKey.FamilyInterval),
+                    highlighted = currentStep?.key == TutorialKey.FamilyInterval && tutorialMode,
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "2",
                     title = stringResource(R.string.family_wait_time_title)
@@ -311,7 +353,8 @@ fun SettingsScreen(
                 }
 
                 SettingSection(
-                    modifier = tutorialSectionModifier(null),
+                    modifier = tutorialSectionModifier(TutorialKey.RecipientTitle),
+                    highlighted = currentStep?.key == TutorialKey.RecipientTitle && tutorialMode,
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "稱",
                     title = stringResource(R.string.recipient_title_label)
@@ -382,7 +425,8 @@ fun SettingsScreen(
                 }
 
                 SettingSection(
-                    modifier = tutorialSectionModifier(null),
+                    modifier = tutorialSectionModifier(TutorialKey.QuietHours),
+                    highlighted = currentStep?.key == TutorialKey.QuietHours && tutorialMode,
                     eyebrow = stringResource(R.string.reminder_pacing_section),
                     icon = "Z",
                     title = stringResource(R.string.quiet_hours_title)
@@ -451,7 +495,8 @@ fun SettingsScreen(
                 }
 
                 SettingSection(
-                    modifier = tutorialSectionModifier(null),
+                    modifier = tutorialSectionModifier(TutorialKey.Webhook),
+                    highlighted = currentStep?.key == TutorialKey.Webhook && tutorialMode,
                     eyebrow = stringResource(R.string.advanced_section),
                     icon = "G",
                     title = stringResource(R.string.webhook_title)
@@ -496,9 +541,31 @@ fun SettingsScreen(
                     ) {
                         Text(stringResource(R.string.send_test_email), fontWeight = FontWeight.SemiBold)
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(GAS_DOCS_URL))
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    AppColors.TextHint.copy(alpha = 0.28f),
+                                    AppColors.TextHint.copy(alpha = 0.14f)
+                                )
+                            )
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.TextSecondary)
+                    ) {
+                        Text(stringResource(R.string.open_gas_docs), fontWeight = FontWeight.Medium)
+                    }
                 }
 
-                DarkCard(modifier = tutorialSectionModifier(null)) {
+                DarkCard(modifier = tutorialSectionModifier(TutorialKey.TestAndLogs)) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                         OutlinedButton(
                             onClick = onNavigateToLogs,
@@ -593,7 +660,7 @@ fun SettingsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(if (tutorialMode) 190.dp else 16.dp))
+                Spacer(modifier = Modifier.height(if (tutorialMode) 760.dp else 16.dp))
             }
 
             if (tutorialMode && currentStep != null) {
@@ -601,9 +668,8 @@ fun SettingsScreen(
                     step = currentStep,
                     stepIndex = uiState.tutorialStepIndex,
                     totalSteps = tutorialSteps.size,
-                    placeAtTop = uiState.tutorialStepIndex >= 2,
                     onNext = {
-                        if (viewModel.onTutorialNext()) {
+                        if (viewModel.onTutorialNext(tutorialSteps.lastIndex)) {
                             onNavigateBack()
                         }
                     },
@@ -745,21 +811,36 @@ private fun StatusChip(
 
 private enum class TutorialKey {
     UserName,
+    CheckInInterval,
+    FamilyInterval,
     FamilyEmail,
+    RecipientTitle,
     CareToggle,
+    QuietHours,
+    Webhook,
+    TestAndLogs,
     Save
 }
+
+private const val GAS_DOCS_URL = "https://github.com/bamd5alifes7/AlivePlease/tree/master/docs"
 
 private enum class TutorialRequirement {
     Required,
     Optional
 }
 
+private enum class TutorialOverlayPlacement {
+    Top,
+    Bottom
+}
+
 private data class TutorialStep(
     val key: TutorialKey,
     val title: String,
     val description: String,
-    val requirement: TutorialRequirement
+    val requirement: TutorialRequirement,
+    val overlayPlacement: TutorialOverlayPlacement = TutorialOverlayPlacement.Bottom,
+    val focusOffsetDp: Int = 148
 )
 
 private fun sectionModifier(
@@ -784,7 +865,6 @@ private fun TutorialOverlay(
     step: TutorialStep,
     stepIndex: Int,
     totalSteps: Int,
-    placeAtTop: Boolean,
     onNext: () -> Unit,
     onBack: () -> Unit,
     onClose: () -> Unit
@@ -793,7 +873,10 @@ private fun TutorialOverlay(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.28f)),
-        contentAlignment = if (placeAtTop) Alignment.TopCenter else Alignment.BottomCenter
+        contentAlignment = when (step.overlayPlacement) {
+            TutorialOverlayPlacement.Top -> Alignment.TopCenter
+            TutorialOverlayPlacement.Bottom -> Alignment.BottomCenter
+        }
     ) {
         Box(
             modifier = Modifier
@@ -801,8 +884,8 @@ private fun TutorialOverlay(
                 .padding(
                     start = 16.dp,
                     end = 16.dp,
-                    top = if (placeAtTop) 16.dp else 0.dp,
-                    bottom = if (placeAtTop) 0.dp else 16.dp
+                    top = if (step.overlayPlacement == TutorialOverlayPlacement.Top) 16.dp else 0.dp,
+                    bottom = if (step.overlayPlacement == TutorialOverlayPlacement.Bottom) 16.dp else 0.dp
                 )
                 .clip(RoundedCornerShape(22.dp))
                 .background(

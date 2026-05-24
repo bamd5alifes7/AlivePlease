@@ -104,8 +104,8 @@ class SettingsViewModel(
         uiState = uiState.copy(showSaveMessage = false)
     }
 
-    fun onTutorialNext(): Boolean {
-        if (uiState.tutorialStepIndex < TUTORIAL_LAST_INDEX) {
+    fun onTutorialNext(lastIndex: Int): Boolean {
+        if (uiState.tutorialStepIndex < lastIndex) {
             uiState = uiState.copy(tutorialStepIndex = uiState.tutorialStepIndex + 1)
             return false
         }
@@ -209,8 +209,6 @@ class SettingsViewModel(
     }
 
     companion object {
-        private const val TUTORIAL_LAST_INDEX = 3
-
         fun factory(context: Context): ViewModelProvider.Factory {
             val appContext = context.applicationContext
             return object : ViewModelProvider.Factory {
