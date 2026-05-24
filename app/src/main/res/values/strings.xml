@@ -16,7 +16,7 @@
     <string name="settings_title">設定</string>
     <string name="user_name_title">你的名字</string>
     <string name="user_name_hint">例如：小明、阿哲</string>
-    <string name="check_in_interval">打卡提醒間隔</string>
+    <string name="check_in_interval">提醒我報平安</string>
     <string name="family_notify_interval">多久沒打卡就通知親友</string>
     <string name="family_email">通知對象 Email</string>
     <string name="family_recipient_title">信件中的稱呼</string>
@@ -50,9 +50,9 @@
     <string name="mail_delivery_section">通知服務</string>
     <string name="advanced_section">進階設定</string>
     <string name="display_name_label">輸入你想顯示的名字</string>
-    <string name="check_in_interval_label">幾小時提醒一次</string>
-    <string name="family_wait_time_title">通知家人的等待時間</string>
-    <string name="family_wait_time_label">幾小時沒打卡就寄信</string>
+    <string name="check_in_interval_label">每隔幾小時提醒一次</string>
+    <string name="family_wait_time_title">太久沒報平安時</string>
+    <string name="family_wait_time_label">幾小時後通知家人</string>
     <string name="family_email_label">要通知的 Email</string>
     <string name="recipient_title_label">收件人稱呼</string>
     <string name="recipient_title_label_hint">例如：媽媽、哥哥、家人</string>
