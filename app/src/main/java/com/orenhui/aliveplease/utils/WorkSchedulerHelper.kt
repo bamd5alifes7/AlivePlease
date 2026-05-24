@@ -1,28 +1,27 @@
 package com.orenhui.aliveplease.utils
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.os.Build
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.orenhui.aliveplease.data.AppDataStore
-import com.orenhui.aliveplease.notifications.CareAlarmReceiver
-import com.orenhui.aliveplease.notifications.FamilyAlarmReceiver
+import com.orenhui.aliveplease.workers.CareNotificationWorker
 import com.orenhui.aliveplease.workers.CheckInReminderWorker
+import com.orenhui.aliveplease.workers.FamilyNotificationWorker
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 object WorkSchedulerHelper {
 
-    private const val ALARM_REQUEST_CODE = 9999
-    private const val CARE_ALARM_REQUEST_CODE = 10001
+    private const val CARE_WORK_NAME = "care_notification"
+    private const val FAMILY_WORK_NAME = "family_notification_check"
+    private const val DEFERRED_CHECK_IN_WORK_NAME = "check_in_reminder_deferred"
     private const val MIN_CARE_DELAY_MILLIS = 4L * 60L * 60L * 1000L
     private const val MAX_CARE_DELAY_MILLIS = 8L * 60L * 60L * 1000L
-    private const val DEFERRED_CHECK_IN_WORK_NAME = "check_in_reminder_deferred"
 
     fun rescheduleAll(context: Context) {
         val dataStore = AppDataStore(context)
@@ -42,59 +41,29 @@ object WorkSchedulerHelper {
 
     fun scheduleFamilyNotification(context: Context, delayMillis: Long) {
         val dataStore = AppDataStore(context)
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val safeDelay = if (delayMillis > 0) delayMillis else 1000L
+        val request = OneTimeWorkRequestBuilder<FamilyNotificationWorker>()
+            .setInitialDelay(safeDelay, TimeUnit.MILLISECONDS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+            .build()
 
-        val intent = Intent(context, FamilyAlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            ALARM_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            FAMILY_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
         )
 
-        alarmManager.cancel(pendingIntent)
-
-        val safeDelay = if (delayMillis > 0) delayMillis else 1000L
-        val triggerAtMillis = System.currentTimeMillis() + safeDelay
-
-        dataStore.addExecutionLog("已安排親友通知，約 ${safeDelay / 1000} 秒後觸發。")
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            }
-        } catch (e: SecurityException) {
-            dataStore.addExecutionLog("親友通知精準排程失敗，改用一般排程。")
-            alarmManager.set(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent
-            )
-        }
+        dataStore.addExecutionLog("已安排家人通知檢查，約 ${safeDelay / 1000} 秒後由系統背景執行。")
     }
 
     fun cancelFamilyNotification(context: Context) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, FamilyAlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            ALARM_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
-
-        AppDataStore(context).addExecutionLog("已取消親友通知排程。")
+        WorkManager.getInstance(context).cancelUniqueWork(FAMILY_WORK_NAME)
+        AppDataStore(context).addExecutionLog("已取消家人通知檢查。")
     }
 
     fun scheduleNextCareNotification(context: Context) {
@@ -104,17 +73,8 @@ object WorkSchedulerHelper {
             return
         }
 
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = createCarePendingIntent(context)
-        alarmManager.cancel(pendingIntent)
-
         val randomDelay = Random.nextLong(MIN_CARE_DELAY_MILLIS, MAX_CARE_DELAY_MILLIS + 1)
-        val rawTriggerTime = System.currentTimeMillis() + randomDelay
-        val adjustedTriggerTime = adjustForQuietHours(dataStore, rawTriggerTime)
-        val delayMinutes = (adjustedTriggerTime - System.currentTimeMillis()) / 60000
-
-        dataStore.addExecutionLog("已安排下次關懷提醒，約 $delayMinutes 分鐘後觸發。")
-        scheduleCareAlarm(alarmManager, pendingIntent, adjustedTriggerTime, dataStore)
+        scheduleCareNotificationAt(context, System.currentTimeMillis() + randomDelay)
     }
 
     fun scheduleCareNotificationAt(context: Context, triggerAtMillis: Long) {
@@ -124,21 +84,24 @@ object WorkSchedulerHelper {
             return
         }
 
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = createCarePendingIntent(context)
-        alarmManager.cancel(pendingIntent)
-
         val adjustedTriggerTime = adjustForQuietHours(dataStore, triggerAtMillis)
-        val delayMinutes = (adjustedTriggerTime - System.currentTimeMillis()).coerceAtLeast(0L) / 60000
-        dataStore.addExecutionLog("關懷提醒已延後，約 $delayMinutes 分鐘後觸發。")
-        scheduleCareAlarm(alarmManager, pendingIntent, adjustedTriggerTime, dataStore)
+        val delayMillis = (adjustedTriggerTime - System.currentTimeMillis()).coerceAtLeast(1000L)
+        val request = OneTimeWorkRequestBuilder<CareNotificationWorker>()
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            CARE_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+
+        dataStore.addExecutionLog("已安排關懷提醒，約 ${delayMillis / 60000} 分鐘後由系統背景執行。")
     }
 
     fun cancelCareNotification(context: Context) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = createCarePendingIntent(context)
-        alarmManager.cancel(pendingIntent)
-        AppDataStore(context).addExecutionLog("已取消關懷提醒排程。")
+        WorkManager.getInstance(context).cancelUniqueWork(CARE_WORK_NAME)
+        AppDataStore(context).addExecutionLog("已取消關懷提醒。")
     }
 
     fun scheduleDeferredCheckInReminder(context: Context, triggerAtMillis: Long) {
@@ -193,48 +156,8 @@ object WorkSchedulerHelper {
         return calendar.timeInMillis
     }
 
-    private fun createCarePendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, CareAlarmReceiver::class.java)
-        return PendingIntent.getBroadcast(
-            context,
-            CARE_ALARM_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-    }
-
     private fun minutesOfDay(timeMillis: Long): Int {
         val calendar = Calendar.getInstance().apply { this.timeInMillis = timeMillis }
         return calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
-    }
-
-    private fun scheduleCareAlarm(
-        alarmManager: AlarmManager,
-        pendingIntent: PendingIntent,
-        triggerAtMillis: Long,
-        dataStore: AppDataStore
-    ) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            }
-        } catch (e: SecurityException) {
-            dataStore.addExecutionLog("關懷提醒精準排程失敗，改用一般排程。")
-            alarmManager.set(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent
-            )
-        }
     }
 }

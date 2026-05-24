@@ -1,6 +1,8 @@
 package com.orenhui.aliveplease.data
 
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Configuration
+import androidx.work.testing.WorkManagerTestInitHelper
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -19,6 +21,10 @@ class AppDataStoreTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        WorkManagerTestInitHelper.initializeTestWorkManager(
+            context,
+            Configuration.Builder().build()
+        )
         context.getSharedPreferences("alive_please_prefs", android.content.Context.MODE_PRIVATE)
             .edit()
             .clear()

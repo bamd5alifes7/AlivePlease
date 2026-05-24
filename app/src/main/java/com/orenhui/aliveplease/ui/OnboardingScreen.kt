@@ -107,13 +107,13 @@ fun OnboardingScreen(
                 )
                 OnboardingStep(
                     number = "3",
-                    title = "Webhook 可先留空",
-                    description = "GAS 欄位空白時會先使用預設值，之後想換自己的再補。"
+                    title = "使用預設通知服務",
+                    description = "家人通知會透過 Alive Please 的預設通知服務寄出，不需要自己設定 GAS。"
                 )
                 OnboardingStep(
                     number = "4",
                     title = "到設定頁測一次寄信",
-                    description = "建議完成通知權限與測試寄信，確認整條流程都正常。"
+                    description = "建議完成通知權限與測試 Email，確認家人通知能正常送出。"
                 )
             }
 

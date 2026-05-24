@@ -96,6 +96,7 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test:core:1.5.0")
+    testImplementation("androidx.work:work-testing:2.9.0")
     testImplementation("org.robolectric:robolectric:4.14")
     testImplementation("io.mockk:mockk:1.13.10")
 }

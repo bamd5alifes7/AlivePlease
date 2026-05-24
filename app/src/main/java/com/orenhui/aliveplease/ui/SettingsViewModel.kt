@@ -209,7 +209,7 @@ class SettingsViewModel(
     }
 
     companion object {
-        private const val TUTORIAL_LAST_INDEX = 4
+        private const val TUTORIAL_LAST_INDEX = 3
 
         fun factory(context: Context): ViewModelProvider.Factory {
             val appContext = context.applicationContext

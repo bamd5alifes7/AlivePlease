@@ -100,12 +100,6 @@ fun SettingsScreen(
             requirement = TutorialRequirement.Required
         ),
         TutorialStep(
-            key = TutorialKey.Webhook,
-            title = stringResource(R.string.tutorial_webhook_title),
-            description = stringResource(R.string.tutorial_webhook_description),
-            requirement = TutorialRequirement.Optional
-        ),
-        TutorialStep(
             key = TutorialKey.CareToggle,
             title = stringResource(R.string.tutorial_care_toggle_title),
             description = stringResource(R.string.tutorial_care_toggle_description),
@@ -299,6 +293,14 @@ fun SettingsScreen(
                             modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                         )
                     }
+
+                    Text(
+                        text = stringResource(R.string.notification_service_description),
+                        color = AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
                 }
 
                 SettingSection(
@@ -317,55 +319,6 @@ fun SettingsScreen(
                         supportingText = { Text(stringResource(R.string.recipient_title_supporting)) },
                         colors = fieldColors
                     )
-                }
-
-                SettingSection(
-                    modifier = tutorialSectionModifier(TutorialKey.Webhook),
-                    highlighted = currentStep?.key == TutorialKey.Webhook && tutorialMode,
-                    eyebrow = stringResource(R.string.mail_delivery_section),
-                    icon = "G",
-                    title = stringResource(R.string.webhook_title)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.gasWebhookUrl,
-                        onValueChange = viewModel::onGasWebhookUrlChanged,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.webhook_default_label)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        singleLine = true,
-                        colors = fieldColors
-                    )
-
-                    Text(
-                        text = stringResource(R.string.webhook_description),
-                        color = AppColors.TextHint,
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(sendingTestEmailMessage)
-                                snackbarHostState.showSnackbar(viewModel.sendTestEmail())
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = Brush.horizontalGradient(
-                                listOf(
-                                    AppColors.PrimaryGreen.copy(alpha = 0.7f),
-                                    AppColors.PrimaryGreenDim.copy(alpha = 0.7f)
-                                )
-                            )
-                        ),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.PrimaryGreen)
-                    ) {
-                        Text(stringResource(R.string.send_test_email), fontWeight = FontWeight.SemiBold)
-                    }
                 }
 
                 DarkCard(
@@ -488,6 +441,54 @@ fun SettingsScreen(
                         lineHeight = 18.sp,
                         modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                     )
+                }
+
+                SettingSection(
+                    modifier = tutorialSectionModifier(null),
+                    eyebrow = stringResource(R.string.advanced_section),
+                    icon = "G",
+                    title = stringResource(R.string.webhook_title)
+                ) {
+                    OutlinedTextField(
+                        value = uiState.gasWebhookUrl,
+                        onValueChange = viewModel::onGasWebhookUrlChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.webhook_default_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        singleLine = true,
+                        colors = fieldColors
+                    )
+
+                    Text(
+                        text = stringResource(R.string.webhook_description),
+                        color = AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(sendingTestEmailMessage)
+                                snackbarHostState.showSnackbar(viewModel.sendTestEmail())
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    AppColors.PrimaryGreen.copy(alpha = 0.7f),
+                                    AppColors.PrimaryGreenDim.copy(alpha = 0.7f)
+                                )
+                            )
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.PrimaryGreen)
+                    ) {
+                        Text(stringResource(R.string.send_test_email), fontWeight = FontWeight.SemiBold)
+                    }
                 }
 
                 DarkCard(modifier = tutorialSectionModifier(null)) {
@@ -691,7 +692,7 @@ private fun SettingsHeroCard(
                 )
                 StatusChip(
                     modifier = Modifier.weight(1f),
-                    label = "Webhook",
+                    label = stringResource(R.string.mail_delivery_section),
                     value = stringResource(
                         if (gasWebhookUrl.isBlank()) R.string.status_default_value
                         else R.string.status_custom_value
@@ -738,7 +739,6 @@ private fun StatusChip(
 private enum class TutorialKey {
     UserName,
     FamilyEmail,
-    Webhook,
     CareToggle,
     Save
 }
