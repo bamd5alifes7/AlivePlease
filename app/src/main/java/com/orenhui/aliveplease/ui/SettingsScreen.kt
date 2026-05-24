@@ -860,7 +860,7 @@ private enum class TutorialKey {
     Save
 }
 
-private const val GAS_DOCS_URL = "https://github.com/bamd5alifes7/AlivePlease/tree/master/docs"
+private const val GAS_DOCS_URL = "https://github.com/bamd5alifes7/AlivePlease/blob/master/docs/AlivePleaseWebhook.md"
 
 private enum class TutorialRequirement {
     Required,
