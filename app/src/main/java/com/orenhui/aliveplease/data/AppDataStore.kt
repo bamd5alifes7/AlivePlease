@@ -34,8 +34,8 @@ class AppDataStore(private val context: Context) {
         private const val KEY_IS_FIRST_LAUNCH = "is_first_launch"
         private const val KEY_USER_NAME = "user_name"
 
-        private const val DEFAULT_NOTIFY_INTERVAL = 24L
-        private const val DEFAULT_FAMILY_NOTIFY_INTERVAL = 48L
+        private const val DEFAULT_NOTIFY_INTERVAL = 12L
+        private const val DEFAULT_FAMILY_NOTIFY_INTERVAL = 28L
         private const val DEFAULT_QUIET_HOURS_START_MINUTES = 23 * 60
         private const val DEFAULT_QUIET_HOURS_END_MINUTES = 7 * 60
         private const val DEFAULT_GAS_WEBHOOK_URL =
