@@ -16,6 +16,7 @@ data class SettingsUiState(
     val userName: String = "",
     val checkInInterval: String = "",
     val familyInterval: String = "",
+    val familyWarningBefore: String = "",
     val familyEmail: String = "",
     val familyRecipientTitle: String = "",
     val gasWebhookUrl: String = "",
@@ -25,6 +26,7 @@ data class SettingsUiState(
     val quietHoursEnd: String = "",
     val showSaveMessage: Boolean = false,
     val emailError: Boolean = false,
+    val familyWarningError: Boolean = false,
     val quietHoursError: Boolean = false,
     val tutorialStepIndex: Int = -1
 )
@@ -47,6 +49,7 @@ class SettingsViewModel(
             userName = dataStore.getUserName().takeUnless { it == "??" }.orEmpty(),
             checkInInterval = dataStore.getNotifyInterval().toString(),
             familyInterval = if (current % 1 == 0f) current.toInt().toString() else current.toString(),
+            familyWarningBefore = formatHours(dataStore.getFamilyWarningBeforeHours()),
             familyEmail = dataStore.getFamilyEmail(),
             familyRecipientTitle = dataStore.getFamilyRecipientTitle()
                 .takeUnless { it.contains("??") }
@@ -69,7 +72,11 @@ class SettingsViewModel(
     }
 
     fun onFamilyIntervalChanged(value: String) {
-        uiState = uiState.copy(familyInterval = value)
+        uiState = uiState.copy(familyInterval = value, familyWarningError = false)
+    }
+
+    fun onFamilyWarningBeforeChanged(value: String) {
+        uiState = uiState.copy(familyWarningBefore = value, familyWarningError = false)
     }
 
     fun onFamilyEmailChanged(value: String) {
@@ -173,10 +180,23 @@ class SettingsViewModel(
             uiState = uiState.copy(quietHoursError = true)
             return false
         }
+        val familyIntervalValue = state.familyInterval.toFloatOrNull()
+            ?.takeIf { it > 0 }
+            ?: dataStore.getFamilyNotifyIntervalFloat()
+        val familyWarningBeforeValue = state.familyWarningBefore.toFloatOrNull()
+        if (
+            familyWarningBeforeValue == null ||
+            familyWarningBeforeValue <= 0 ||
+            familyWarningBeforeValue >= familyIntervalValue
+        ) {
+            uiState = uiState.copy(familyWarningError = true)
+            return false
+        }
 
         state.userName.trim().takeIf { it.isNotBlank() }?.let(dataStore::setUserName)
         state.checkInInterval.toLongOrNull()?.takeIf { it > 0 }?.let(dataStore::setNotifyInterval)
-        state.familyInterval.toFloatOrNull()?.takeIf { it > 0 }?.let(dataStore::setFamilyNotifyIntervalFloat)
+        dataStore.setFamilyNotifyIntervalFloat(familyIntervalValue)
+        dataStore.setFamilyWarningBeforeHours(familyWarningBeforeValue)
         dataStore.setFamilyEmail(state.familyEmail)
         dataStore.setFamilyRecipientTitle(state.familyRecipientTitle)
         dataStore.setGasWebhookUrl(state.gasWebhookUrl)
@@ -206,6 +226,10 @@ class SettingsViewModel(
     private fun formatMinutes(minutes: Int): String {
         val normalized = minutes.coerceIn(0, 23 * 60 + 59)
         return "%02d:%02d".format(normalized / 60, normalized % 60)
+    }
+
+    private fun formatHours(hours: Float): String {
+        return if (hours % 1 == 0f) hours.toInt().toString() else hours.toString()
     }
 
     companion object {

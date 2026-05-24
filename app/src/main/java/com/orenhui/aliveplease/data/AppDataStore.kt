@@ -23,6 +23,7 @@ class AppDataStore(private val context: Context) {
         private const val KEY_NOTIFY_INTERVAL = "notify_interval"
         private const val KEY_FAMILY_NOTIFY_INTERVAL = "family_notify_interval"
         private const val KEY_FAMILY_NOTIFY_INTERVAL_FLOAT = "family_notify_interval_float"
+        private const val KEY_FAMILY_WARNING_BEFORE_HOURS = "family_warning_before_hours"
         private const val KEY_FAMILY_EMAIL = "family_email"
         private const val KEY_FAMILY_RECIPIENT_TITLE = "family_recipient_title"
         private const val KEY_GAS_WEBHOOK_URL = "gas_webhook_url"
@@ -36,6 +37,7 @@ class AppDataStore(private val context: Context) {
 
         private const val DEFAULT_NOTIFY_INTERVAL = 12L
         private const val DEFAULT_FAMILY_NOTIFY_INTERVAL = 28L
+        private const val DEFAULT_FAMILY_WARNING_BEFORE_HOURS = 0.5f
         private const val DEFAULT_QUIET_HOURS_START_MINUTES = 23 * 60
         private const val DEFAULT_QUIET_HOURS_END_MINUTES = 7 * 60
         private const val DEFAULT_GAS_WEBHOOK_URL =
@@ -127,6 +129,14 @@ class AppDataStore(private val context: Context) {
 
     fun setFamilyNotifyIntervalFloat(hours: Float) {
         prefs.edit().putFloat(KEY_FAMILY_NOTIFY_INTERVAL_FLOAT, hours).apply()
+        WorkSchedulerHelper.scheduleFamilyNotification(context, getTimeUntilFamilyNotification())
+    }
+
+    fun getFamilyWarningBeforeHours(): Float =
+        prefs.getFloat(KEY_FAMILY_WARNING_BEFORE_HOURS, DEFAULT_FAMILY_WARNING_BEFORE_HOURS)
+
+    fun setFamilyWarningBeforeHours(hours: Float) {
+        prefs.edit().putFloat(KEY_FAMILY_WARNING_BEFORE_HOURS, hours).apply()
         WorkSchedulerHelper.scheduleFamilyNotification(context, getTimeUntilFamilyNotification())
     }
 
@@ -225,6 +235,13 @@ class AppDataStore(private val context: Context) {
         return if (remaining > 0) remaining else 0L
     }
 
+    fun getTimeUntilFamilyWarning(): Long {
+        val notificationRemaining = getTimeUntilFamilyNotification()
+        val warningBeforeMillis = (getFamilyWarningBeforeHours() * 60 * 60 * 1000).toLong()
+        val warningRemaining = notificationRemaining - warningBeforeMillis
+        return if (warningRemaining > 0) warningRemaining else 0L
+    }
+
     fun shouldNotifyFamily(): Boolean {
         val lastCheckIn = getLastCheckInTime()
         if (lastCheckIn == 0L) return false
@@ -232,6 +249,13 @@ class AppDataStore(private val context: Context) {
         val familyIntervalMillis = (getFamilyNotifyIntervalFloat() * 60 * 60 * 1000).toLong()
         val elapsed = System.currentTimeMillis() - lastCheckIn
         return elapsed >= familyIntervalMillis
+    }
+
+    fun shouldSendFamilyWarning(): Boolean {
+        if (!shouldScheduleFamilyNotification()) return false
+        val remaining = getTimeUntilFamilyNotification()
+        val warningBeforeMillis = (getFamilyWarningBeforeHours() * 60 * 60 * 1000).toLong()
+        return remaining in 1..warningBeforeMillis
     }
 
     fun addExecutionLog(message: String) {

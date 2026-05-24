@@ -110,6 +110,12 @@ fun SettingsScreen(
             requirement = TutorialRequirement.Required
         ),
         TutorialStep(
+            key = TutorialKey.FamilyWarning,
+            title = stringResource(R.string.tutorial_family_warning_title),
+            description = stringResource(R.string.tutorial_family_warning_description),
+            requirement = TutorialRequirement.Required
+        ),
+        TutorialStep(
             key = TutorialKey.FamilyEmail,
             title = stringResource(R.string.tutorial_family_email_title),
             description = stringResource(R.string.tutorial_family_email_description),
@@ -313,6 +319,37 @@ fun SettingsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         colors = fieldColors
+                    )
+                }
+
+                SettingSection(
+                    modifier = tutorialSectionModifier(TutorialKey.FamilyWarning),
+                    highlighted = currentStep?.key == TutorialKey.FamilyWarning && tutorialMode,
+                    eyebrow = stringResource(R.string.family_notification_section),
+                    icon = "!",
+                    title = stringResource(R.string.family_warning_before_title)
+                ) {
+                    OutlinedTextField(
+                        value = uiState.familyWarningBefore,
+                        onValueChange = viewModel::onFamilyWarningBeforeChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.family_warning_before_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        isError = uiState.familyWarningError,
+                        colors = fieldColors
+                    )
+
+                    Text(
+                        text = if (uiState.familyWarningError) {
+                            stringResource(R.string.family_warning_before_error)
+                        } else {
+                            stringResource(R.string.family_warning_before_description)
+                        },
+                        color = if (uiState.familyWarningError) AppColors.Error else AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                     )
                 }
 
@@ -813,6 +850,7 @@ private enum class TutorialKey {
     UserName,
     CheckInInterval,
     FamilyInterval,
+    FamilyWarning,
     FamilyEmail,
     RecipientTitle,
     CareToggle,

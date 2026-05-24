@@ -11,6 +11,7 @@ import com.orenhui.aliveplease.data.AppDataStore
 import com.orenhui.aliveplease.workers.CareNotificationWorker
 import com.orenhui.aliveplease.workers.CheckInReminderWorker
 import com.orenhui.aliveplease.workers.FamilyNotificationWorker
+import com.orenhui.aliveplease.workers.FamilyWarningWorker
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -19,6 +20,7 @@ object WorkSchedulerHelper {
 
     private const val CARE_WORK_NAME = "care_notification"
     private const val FAMILY_WORK_NAME = "family_notification_check"
+    private const val FAMILY_WARNING_WORK_NAME = "family_warning_notification"
     private const val DEFERRED_CHECK_IN_WORK_NAME = "check_in_reminder_deferred"
     private const val MIN_CARE_DELAY_MILLIS = 4L * 60L * 60L * 1000L
     private const val MAX_CARE_DELAY_MILLIS = 8L * 60L * 60L * 1000L
@@ -59,11 +61,38 @@ object WorkSchedulerHelper {
         )
 
         dataStore.addExecutionLog("已安排家人通知檢查，約 ${safeDelay / 1000} 秒後由系統背景執行。")
+        scheduleFamilyWarningNotification(context)
     }
 
     fun cancelFamilyNotification(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(FAMILY_WORK_NAME)
+        cancelFamilyWarningNotification(context)
         AppDataStore(context).addExecutionLog("已取消家人通知檢查。")
+    }
+
+    fun scheduleFamilyWarningNotification(context: Context) {
+        val dataStore = AppDataStore(context)
+        if (!dataStore.shouldScheduleFamilyNotification()) {
+            cancelFamilyWarningNotification(context)
+            return
+        }
+
+        val safeDelay = dataStore.getTimeUntilFamilyWarning().let { if (it > 0) it else 1000L }
+        val request = OneTimeWorkRequestBuilder<FamilyWarningWorker>()
+            .setInitialDelay(safeDelay, TimeUnit.MILLISECONDS)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            FAMILY_WARNING_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+
+        dataStore.addExecutionLog("已安排親友通知前提醒，約 ${safeDelay / 1000} 秒後由系統背景執行。")
+    }
+
+    private fun cancelFamilyWarningNotification(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(FAMILY_WARNING_WORK_NAME)
     }
 
     fun scheduleNextCareNotification(context: Context) {

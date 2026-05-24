@@ -11,15 +11,18 @@ import androidx.core.app.NotificationManagerCompat
 import com.orenhui.aliveplease.MainActivity
 import com.orenhui.aliveplease.R
 import com.orenhui.aliveplease.data.AppDataStore
+import com.orenhui.aliveplease.utils.TimeFormatter
 
 object NotificationHelper {
 
     private const val CHANNEL_ID_CHECK_IN = "check_in_reminder"
     private const val CHANNEL_ID_CARE = "care_message"
+    private const val CHANNEL_ID_FAMILY_WARNING = "family_warning"
     private const val CHANNEL_ID_FAMILY_STATUS = "family_status"
 
     private const val NOTIFICATION_ID_CHECK_IN = 1001
     private const val NOTIFICATION_ID_CARE = 1002
+    private const val NOTIFICATION_ID_FAMILY_WARNING = 1004
     private const val NOTIFICATION_ID_FAMILY_STATUS = 1003
 
     fun createNotificationChannels(context: Context) {
@@ -54,8 +57,18 @@ object NotificationHelper {
                 enableVibration(true)
             }
 
+            val familyWarningChannel = NotificationChannel(
+                CHANNEL_ID_FAMILY_WARNING,
+                context.getString(R.string.notification_channel_family_warning_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = context.getString(R.string.notification_channel_family_warning_desc)
+                enableVibration(true)
+            }
+
             notificationManager.createNotificationChannel(checkInChannel)
             notificationManager.createNotificationChannel(careChannel)
+            notificationManager.createNotificationChannel(familyWarningChannel)
             notificationManager.createNotificationChannel(familyStatusChannel)
         }
     }
@@ -69,7 +82,7 @@ object NotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_CHECK_IN)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(context.getString(R.string.notification_checkin_title))
             .setContentText(reminderMessage)
             .setStyle(NotificationCompat.BigTextStyle().bigText(reminderMessage))
@@ -83,7 +96,7 @@ object NotificationHelper {
 
     fun sendCareMessage(context: Context, message: String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_CARE)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(context.getString(R.string.notification_care_title))
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -107,7 +120,7 @@ object NotificationHelper {
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID_FAMILY_STATUS)
-            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -117,6 +130,23 @@ object NotificationHelper {
             .build()
 
         notifySafely(context, NOTIFICATION_ID_FAMILY_STATUS, notification)
+    }
+
+    fun sendFamilyWarning(context: Context, remainingMillis: Long) {
+        val remainingText = TimeFormatter.formatCountdown(context, remainingMillis)
+        val message = context.getString(R.string.notification_family_warning_message, remainingText)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_FAMILY_WARNING)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setContentTitle(context.getString(R.string.notification_family_warning_title))
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(createMainActivityPendingIntent(context))
+            .build()
+
+        notifySafely(context, NOTIFICATION_ID_FAMILY_WARNING, notification)
     }
 
     fun getRandomCareMessage(context: Context): String {

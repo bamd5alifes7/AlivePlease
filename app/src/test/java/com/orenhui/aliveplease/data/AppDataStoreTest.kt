@@ -60,4 +60,41 @@ class AppDataStoreTest {
         assertEquals(23 * 60, dataStore.getQuietHoursStartMinutes())
         assertEquals(7 * 60, dataStore.getQuietHoursEndMinutes())
     }
+
+    @Test
+    fun familyWarningBeforeHours_defaultsToHalfHour() {
+        assertEquals(0.5f, dataStore.getFamilyWarningBeforeHours(), 0.001f)
+    }
+
+    @Test
+    fun getTimeUntilFamilyWarning_returnsNotificationDelayMinusWarningWindow() {
+        val now = System.currentTimeMillis()
+        dataStore.setLastCheckInTime(now)
+        dataStore.setFamilyNotifyIntervalFloat(2f)
+        dataStore.setFamilyWarningBeforeHours(0.5f)
+
+        val remaining = dataStore.getTimeUntilFamilyWarning()
+
+        assertTrue(remaining in (89 * 60 * 1000L)..(90 * 60 * 1000L))
+    }
+
+    @Test
+    fun shouldSendFamilyWarning_isTrueInsideWarningWindow() {
+        dataStore.setFamilyEmail("family@example.com")
+        dataStore.setFamilyNotifyIntervalFloat(2f)
+        dataStore.setFamilyWarningBeforeHours(0.5f)
+        dataStore.setLastCheckInTime(System.currentTimeMillis() - (95 * 60 * 1000L))
+
+        assertTrue(dataStore.shouldSendFamilyWarning())
+    }
+
+    @Test
+    fun shouldSendFamilyWarning_isFalseBeforeWarningWindow() {
+        dataStore.setFamilyEmail("family@example.com")
+        dataStore.setFamilyNotifyIntervalFloat(2f)
+        dataStore.setFamilyWarningBeforeHours(0.5f)
+        dataStore.setLastCheckInTime(System.currentTimeMillis() - (60 * 60 * 1000L))
+
+        assertFalse(dataStore.shouldSendFamilyWarning())
+    }
 }
