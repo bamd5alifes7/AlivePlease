@@ -71,6 +71,12 @@
     <string name="test_email_failed_short">測試 Email 暫時沒有送出去，我們再檢查一下設定。</string>
     <string name="care_toggle_title">開啟關懷提醒</string>
     <string name="care_toggle_description">會在 4 ~ 8 小時之間隨機推送一點關心給您；當然，也會遵守您對夜間安靜時段的設定。</string>
+    <string name="notification_permission_title">系統通知權限</string>
+    <string name="notification_permission_enabled">提醒可以正常出現在手機通知裡。</string>
+    <string name="notification_permission_disabled">系統通知目前未開啟，打卡提醒與關懷提醒可能不會顯示。</string>
+    <string name="notification_permission_status_enabled">已允許</string>
+    <string name="notification_permission_status_disabled">未開啟</string>
+    <string name="notification_permission_open_settings">前往系統設定</string>
     <string name="settings_tutorial_title">設定導覽</string>
     <string name="settings_center_title">設定中心</string>
     <string name="settings_hero_tutorial_title">導覽中的設定頁</string>

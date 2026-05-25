@@ -111,12 +111,12 @@ class AppDataStore(private val context: Context) {
     }
 
     private fun getTodayDateString(): String {
-        val dateFormat = SimpleDateFormat(DATE_PATTERN, Locale.getDefault())
+        val dateFormat = SimpleDateFormat(DATE_PATTERN, Locale.US)
         return dateFormat.format(Date())
     }
 
     private fun parseCheckInDateMillis(value: String): Long? {
-        val dateFormat = SimpleDateFormat(DATE_PATTERN, Locale.getDefault()).apply {
+        val dateFormat = SimpleDateFormat(DATE_PATTERN, Locale.US).apply {
             isLenient = false
         }
         return runCatching { dateFormat.parse(value)?.time }.getOrNull()

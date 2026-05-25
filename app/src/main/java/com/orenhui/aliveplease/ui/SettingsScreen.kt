@@ -1,7 +1,10 @@
 package com.orenhui.aliveplease.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -43,10 +46,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -56,11 +63,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.orenhui.aliveplease.R
 import com.orenhui.aliveplease.ui.theme.AppColors
@@ -80,14 +91,30 @@ fun SettingsScreen(
     val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(context))
     val uiState = viewModel.uiState
     val density = LocalDensity.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
     val tutorialTargetPositions = remember { mutableStateMapOf<TutorialKey, Int>() }
     val sendingTestEmailMessage = stringResource(R.string.sending_test_email)
+    var notificationsEnabled by remember {
+        mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled())
+    }
 
     LaunchedEffect(tutorialMode) {
         viewModel.reloadState(tutorialMode)
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                notificationsEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     val tutorialSteps = listOf(
@@ -265,7 +292,11 @@ fun SettingsScreen(
                     tutorialMode = tutorialMode,
                     careNotificationEnabled = uiState.careNotificationEnabled,
                     familyEmail = uiState.familyEmail,
-                    gasWebhookUrl = uiState.gasWebhookUrl
+                    gasWebhookUrl = uiState.gasWebhookUrl,
+                    notificationsEnabled = notificationsEnabled,
+                    onOpenNotificationSettings = {
+                        context.startActivity(createNotificationSettingsIntent(context))
+                    }
                 )
 
                 SettingSection(
@@ -727,7 +758,9 @@ private fun SettingsHeroCard(
     tutorialMode: Boolean,
     careNotificationEnabled: Boolean,
     familyEmail: String,
-    gasWebhookUrl: String
+    gasWebhookUrl: String,
+    notificationsEnabled: Boolean,
+    onOpenNotificationSettings: () -> Unit
 ) {
     DarkCard {
         Column(
@@ -782,33 +815,69 @@ private fun SettingsHeroCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatusChip(
-                    modifier = Modifier.weight(1f),
-                    label = stringResource(R.string.status_care_reminder),
-                    value = stringResource(
-                        if (careNotificationEnabled) R.string.status_enabled else R.string.status_disabled
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatusChip(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.status_care_reminder),
+                        value = stringResource(
+                            if (careNotificationEnabled) R.string.status_enabled else R.string.status_disabled
+                        ),
+                        accent = if (careNotificationEnabled) AppColors.PrimaryGreen else AppColors.TextHint
+                    )
+                    StatusChip(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.status_family_notification),
+                        value = stringResource(
+                            if (familyEmail.isBlank()) R.string.status_not_configured
+                            else R.string.status_configured
+                        ),
+                        accent = if (familyEmail.isBlank()) AppColors.AccentAmber else AppColors.PrimaryGreen
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatusChip(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.notification_permission_title),
+                        value = stringResource(
+                            if (notificationsEnabled) R.string.notification_permission_status_enabled
+                            else R.string.notification_permission_status_disabled
+                        ),
+                        accent = if (notificationsEnabled) AppColors.PrimaryGreen else AppColors.AccentAmber
+                    )
+                    StatusChip(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.mail_delivery_section),
+                        value = stringResource(
+                            if (gasWebhookUrl.isBlank()) R.string.status_default_value
+                            else R.string.status_custom_value
+                        ),
+                        accent = AppColors.TextSecondary
+                    )
+                }
+            }
+
+            if (!notificationsEnabled) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onOpenNotificationSettings,
+                    modifier = Modifier.fillMaxWidth(),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                AppColors.AccentAmber.copy(alpha = 0.6f),
+                                AppColors.PrimaryGreen.copy(alpha = 0.28f)
+                            )
+                        )
                     ),
-                    accent = if (careNotificationEnabled) AppColors.PrimaryGreen else AppColors.TextHint
-                )
-                StatusChip(
-                    modifier = Modifier.weight(1f),
-                    label = stringResource(R.string.status_family_notification),
-                    value = stringResource(
-                        if (familyEmail.isBlank()) R.string.status_not_configured
-                        else R.string.status_configured
-                    ),
-                    accent = if (familyEmail.isBlank()) AppColors.AccentAmber else AppColors.PrimaryGreen
-                )
-                StatusChip(
-                    modifier = Modifier.weight(1f),
-                    label = stringResource(R.string.mail_delivery_section),
-                    value = stringResource(
-                        if (gasWebhookUrl.isBlank()) R.string.status_default_value
-                        else R.string.status_custom_value
-                    ),
-                    accent = AppColors.TextSecondary
-                )
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.AccentAmber)
+                ) {
+                    Text(
+                        text = stringResource(R.string.notification_permission_open_settings),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
@@ -861,6 +930,18 @@ private enum class TutorialKey {
 }
 
 private const val GAS_DOCS_URL = "https://github.com/bamd5alifes7/AlivePlease/blob/master/docs/AlivePleaseWebhook.md"
+
+private fun createNotificationSettingsIntent(context: Context): Intent {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.parse("package:${context.packageName}")
+        }
+    }
+}
 
 private enum class TutorialRequirement {
     Required,
