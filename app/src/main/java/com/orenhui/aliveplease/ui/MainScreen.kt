@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -369,9 +370,17 @@ fun MainScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                com.orenhui.aliveplease.ui.components.CalendarView(
-                    checkInDates = uiState.checkInDates
-                )
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    com.orenhui.aliveplease.ui.components.CalendarView(
+                        checkInDates = uiState.checkInDates,
+                        modifier = Modifier
+                            .widthIn(max = 640.dp)
+                            .fillMaxWidth()
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }

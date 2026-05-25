@@ -9,7 +9,6 @@
     <string name="alive_days_summary">%1$d 天</string>
     <string name="alive_days_supporting">恭喜你</string>
     <string name="family_notify_countdown_label">距離通知親友，大約還剩</string>
-    <string name="check_in_success">已經幫你紀錄今天的報平安</string>
     <string name="settings">設定</string>
     <string name="back">返回</string>
 
@@ -125,7 +124,7 @@
     <string name="tutorial_required">必要</string>
     <string name="tutorial_optional">可選</string>
     <string name="main_heart_emoji">❤️</string>
-    <string name="check_in_success_with_emoji">🎉 今天的報平安已記下來了</string>
+    <string name="check_in_success_with_emoji">🎉 已經幫你紀錄今天的報平安</string>
     <string name="countdown_emoji">⏳</string>
     <string name="streak_days_label">連續打卡天數</string>
     <string name="streak_days_summary">%1$d 天</string>

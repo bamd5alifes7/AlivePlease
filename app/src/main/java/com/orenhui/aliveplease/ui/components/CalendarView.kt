@@ -36,7 +36,7 @@ fun CalendarView(
     val month = currentMonth.get(Calendar.MONTH)
     val daysInMonth = currentMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
     val firstDayOfWeek = currentMonth.get(Calendar.DAY_OF_WEEK)
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     val todayString = dateFormat.format(Date())
 
     // 當月打卡天數
