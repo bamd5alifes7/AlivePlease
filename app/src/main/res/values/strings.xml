@@ -8,8 +8,8 @@
     <string name="alive_days_label">累積活著天數</string>
     <string name="alive_days_summary">%1$d 天</string>
     <string name="alive_days_supporting">恭喜你</string>
-    <string name="family_notify_countdown_label">如果還沒打卡，約莫再過</string>
-    <string name="check_in_success">今天的報平安已記下來了</string>
+    <string name="family_notify_countdown_label">距離通知親友，大約還剩</string>
+    <string name="check_in_success">已經幫你紀錄今天的報平安</string>
     <string name="settings">設定</string>
     <string name="back">返回</string>
 
