@@ -24,8 +24,9 @@ data class SettingsUiState(
     val quietHoursEnabled: Boolean = true,
     val quietHoursStart: String = "",
     val quietHoursEnd: String = "",
-    val showSaveMessage: Boolean = false,
     val emailError: Boolean = false,
+    val checkInIntervalError: Boolean = false,
+    val familyIntervalError: Boolean = false,
     val familyWarningError: Boolean = false,
     val quietHoursError: Boolean = false,
     val tutorialStepIndex: Int = -1
@@ -66,15 +67,25 @@ class SettingsViewModel(
     }
 
     fun onCheckInIntervalChanged(value: String) {
-        uiState = uiState.copy(checkInInterval = value)
+        uiState = uiState.copy(
+            checkInInterval = sanitizeIntegerInput(value),
+            checkInIntervalError = false
+        )
     }
 
     fun onFamilyIntervalChanged(value: String) {
-        uiState = uiState.copy(familyInterval = value, familyWarningError = false)
+        uiState = uiState.copy(
+            familyInterval = sanitizeDecimalInput(value),
+            familyIntervalError = false,
+            familyWarningError = false
+        )
     }
 
     fun onFamilyWarningBeforeChanged(value: String) {
-        uiState = uiState.copy(familyWarningBefore = value, familyWarningError = false)
+        uiState = uiState.copy(
+            familyWarningBefore = sanitizeDecimalInput(value),
+            familyWarningError = false
+        )
     }
 
     fun onFamilyEmailChanged(value: String) {
@@ -103,10 +114,6 @@ class SettingsViewModel(
 
     fun onQuietHoursEndChanged(value: String) {
         uiState = uiState.copy(quietHoursEnd = value, quietHoursError = false)
-    }
-
-    fun onSaveMessageShown() {
-        uiState = uiState.copy(showSaveMessage = false)
     }
 
     fun onTutorialNext(lastIndex: Int): Boolean {
@@ -139,7 +146,9 @@ class SettingsViewModel(
         val safeRecipientTitle = state.familyRecipientTitle.trim()
             .ifBlank { dataStore.getFamilyRecipientTitle() }
         val resolvedWebhookUrl = state.gasWebhookUrl.trim().ifBlank { dataStore.getGasWebhookUrl() }
-        val intervalValue = state.familyInterval.toFloatOrNull() ?: dataStore.getFamilyNotifyIntervalFloat()
+        val intervalValue = state.familyInterval.toFloatOrNull()
+            ?.takeIf { it >= MIN_DECIMAL_INTERVAL_HOURS && it <= MAX_DECIMAL_INTERVAL_HOURS }
+            ?: dataStore.getFamilyNotifyIntervalFloat()
 
         val subject = EmailContentBuilder.buildSubject(
             recipientTitle = safeRecipientTitle,
@@ -178,13 +187,24 @@ class SettingsViewModel(
             uiState = uiState.copy(quietHoursError = true)
             return false
         }
+        val checkInIntervalValue = state.checkInInterval.toLongOrNull()
+        if (checkInIntervalValue == null || checkInIntervalValue !in 1L..MAX_INTERVAL_HOURS) {
+            uiState = uiState.copy(checkInIntervalError = true)
+            return false
+        }
         val familyIntervalValue = state.familyInterval.toFloatOrNull()
-            ?.takeIf { it > 0 }
-            ?: dataStore.getFamilyNotifyIntervalFloat()
+        if (
+            familyIntervalValue == null ||
+            familyIntervalValue < MIN_DECIMAL_INTERVAL_HOURS ||
+            familyIntervalValue > MAX_DECIMAL_INTERVAL_HOURS
+        ) {
+            uiState = uiState.copy(familyIntervalError = true)
+            return false
+        }
         val familyWarningBeforeValue = state.familyWarningBefore.toFloatOrNull()
         if (
             familyWarningBeforeValue == null ||
-            familyWarningBeforeValue <= 0 ||
+            familyWarningBeforeValue < MIN_DECIMAL_INTERVAL_HOURS ||
             familyWarningBeforeValue >= familyIntervalValue
         ) {
             uiState = uiState.copy(familyWarningError = true)
@@ -192,7 +212,7 @@ class SettingsViewModel(
         }
 
         state.userName.trim().takeIf { it.isNotBlank() }?.let(dataStore::setUserName)
-        state.checkInInterval.toLongOrNull()?.takeIf { it > 0 }?.let(dataStore::setNotifyInterval)
+        dataStore.setNotifyInterval(checkInIntervalValue)
         dataStore.setFamilyNotifyIntervalFloat(familyIntervalValue)
         dataStore.setFamilyWarningBeforeHours(familyWarningBeforeValue)
         dataStore.setFamilyEmail(state.familyEmail)
@@ -203,7 +223,6 @@ class SettingsViewModel(
         dataStore.setQuietHoursStartMinutes(quietStartMinutes)
         dataStore.setQuietHoursEndMinutes(quietEndMinutes)
 
-        uiState = uiState.copy(showSaveMessage = true)
         return true
     }
 
@@ -230,7 +249,42 @@ class SettingsViewModel(
         return if (hours % 1 == 0f) hours.toInt().toString() else hours.toString()
     }
 
+    private fun sanitizeIntegerInput(value: String): String {
+        return value.filter(Char::isDigit).take(3)
+    }
+
+    private fun sanitizeDecimalInput(value: String): String {
+        val builder = StringBuilder()
+        var hasDecimalPoint = false
+        var wholeDigits = 0
+        var decimalDigits = 0
+
+        value.forEach { char ->
+            when {
+                char.isDigit() && !hasDecimalPoint && wholeDigits < 3 -> {
+                    builder.append(char)
+                    wholeDigits++
+                }
+                char == '.' && !hasDecimalPoint && builder.isNotEmpty() -> {
+                    builder.append(char)
+                    hasDecimalPoint = true
+                }
+                char.isDigit() && hasDecimalPoint && decimalDigits < MAX_DECIMAL_DIGITS -> {
+                    builder.append(char)
+                    decimalDigits++
+                }
+            }
+        }
+
+        return builder.toString()
+    }
+
     companion object {
+        private const val MAX_INTERVAL_HOURS = 240L
+        private const val MIN_DECIMAL_INTERVAL_HOURS = 0.01f
+        private const val MAX_DECIMAL_INTERVAL_HOURS = 240f
+        private const val MAX_DECIMAL_DIGITS = 2
+
         fun factory(context: Context): ViewModelProvider.Factory {
             val appContext = context.applicationContext
             return object : ViewModelProvider.Factory {

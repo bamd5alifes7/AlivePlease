@@ -97,6 +97,8 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
     val tutorialTargetPositions = remember { mutableStateMapOf<TutorialKey, Int>() }
     val sendingTestEmailMessage = stringResource(R.string.sending_test_email)
+    val settingsSavedMessage = stringResource(R.string.settings_saved)
+    val invalidSettingsMessage = stringResource(R.string.settings_invalid)
     var notificationsEnabled by remember {
         mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled())
     }
@@ -331,7 +333,20 @@ fun SettingsScreen(
                         label = { Text(stringResource(R.string.check_in_interval_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
+                        isError = uiState.checkInIntervalError,
                         colors = fieldColors
+                    )
+
+                    Text(
+                        text = if (uiState.checkInIntervalError) {
+                            stringResource(R.string.check_in_interval_error)
+                        } else {
+                            stringResource(R.string.check_in_interval_description)
+                        },
+                        color = if (uiState.checkInIntervalError) AppColors.Error else AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                     )
                 }
 
@@ -349,7 +364,20 @@ fun SettingsScreen(
                         label = { Text(stringResource(R.string.family_wait_time_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
+                        isError = uiState.familyIntervalError,
                         colors = fieldColors
+                    )
+
+                    Text(
+                        text = if (uiState.familyIntervalError) {
+                            stringResource(R.string.family_wait_time_error)
+                        } else {
+                            stringResource(R.string.family_wait_time_description)
+                        },
+                        color = if (uiState.familyIntervalError) AppColors.Error else AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                     )
                 }
 
@@ -688,6 +716,13 @@ fun SettingsScreen(
                         onClick = {
                             if (viewModel.saveSettings()) {
                                 onSettingsSaved()
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(settingsSavedMessage)
+                                }
+                            } else {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(invalidSettingsMessage)
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxSize(),
@@ -701,29 +736,6 @@ fun SettingsScreen(
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White
-                        )
-                    }
-                }
-
-                if (uiState.showSaveMessage) {
-                    LaunchedEffect(uiState.showSaveMessage) {
-                        kotlinx.coroutines.delay(2000)
-                        viewModel.onSaveMessageShown()
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(AppColors.PrimaryGreen.copy(alpha = 0.12f))
-                            .border(1.dp, AppColors.PrimaryGreen.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_saved),
-                            color = AppColors.PrimaryGreen,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
                         )
                     }
                 }

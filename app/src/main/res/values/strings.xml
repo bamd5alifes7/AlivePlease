@@ -24,6 +24,7 @@
     <string name="care_notification_toggle">開啟隨機關心通知</string>
     <string name="save_settings">儲存設定</string>
     <string name="settings_saved">設定已更新</string>
+    <string name="settings_invalid">設定失敗。請上滑，檢查紅字提示。</string>
     <string name="hours">小時</string>
     <string name="email_hint">請輸入收件人的 Email</string>
     <string name="invalid_email">Email 格式看起來不正確</string>
@@ -50,12 +51,16 @@
     <string name="advanced_section">進階設定</string>
     <string name="display_name_label">輸入你想顯示的名字</string>
     <string name="check_in_interval_label">每隔幾小時提醒一次</string>
+    <string name="check_in_interval_description">範圍：1-240 小時，整數。</string>
+    <string name="check_in_interval_error">請輸入 1-240 的整數小時。</string>
     <string name="family_wait_time_title">如果一段時間沒有報平安</string>
     <string name="family_wait_time_label">幾小時後通知親友</string>
+    <string name="family_wait_time_description">0.01-240 小時，可小數二位。</string>
+    <string name="family_wait_time_error">請輸入 0.01-240 小時。</string>
     <string name="family_warning_before_title">寄信前先輕輕提醒我</string>
     <string name="family_warning_before_label">寄信前幾小時先提醒</string>
-    <string name="family_warning_before_description">預設 0.5 小時，也就是寄信前 30 分鐘先提醒你回來打個卡。</string>
-    <string name="family_warning_before_error">提醒時間必須大於 0，且小於通知親友的等待時間。</string>
+    <string name="family_warning_before_description">需小於親友通知時間，可小數二位。</string>
+    <string name="family_warning_before_error">需 0.01 起，且小於親友通知。</string>
     <string name="family_email_label">要通知的 Email</string>
     <string name="recipient_title_label">收件人稱呼</string>
     <string name="recipient_title_label_hint">例如：媽媽、哥哥、寶貝</string>
