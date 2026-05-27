@@ -51,7 +51,7 @@
     <string name="advanced_section">進階設定</string>
     <string name="display_name_label">輸入你想顯示的名字</string>
     <string name="check_in_interval_label">每隔幾小時提醒一次</string>
-    <string name="check_in_interval_description">範圍：1-240 小時，整數。</string>
+    <string name="check_in_interval_description">1-240 小時，整數。</string>
     <string name="check_in_interval_error">請輸入 1-240 的整數小時。</string>
     <string name="family_wait_time_title">如果一段時間沒有報平安</string>
     <string name="family_wait_time_label">幾小時後通知親友</string>
