@@ -45,6 +45,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -77,7 +78,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    tutorialMode: Boolean = false,
+    onTutorialNext: () -> Unit = {},
+    onTutorialBack: () -> Unit = {},
+    onTutorialClose: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: MainViewModel = viewModel(factory = MainViewModel.factory(context))
@@ -153,7 +158,10 @@ fun MainScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToSettings) {
+                    IconButton(
+                        onClick = onNavigateToSettings,
+                        enabled = !tutorialMode
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = context.getString(R.string.settings),
@@ -171,7 +179,7 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pullRefresh(pullRefreshState)
+                .then(if (tutorialMode) Modifier else Modifier.pullRefresh(pullRefreshState))
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -234,6 +242,7 @@ fun MainScreen(
                             .scale(buttonScale),
                         shape = CircleShape,
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        enabled = !tutorialMode,
                         contentPadding = PaddingValues(0.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                     ) {
@@ -385,13 +394,111 @@ fun MainScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            PullRefreshIndicator(
-                refreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = AppColors.SurfaceMid,
-                contentColor = AppColors.PrimaryGreen
-            )
+            if (!tutorialMode) {
+                PullRefreshIndicator(
+                    refreshing = isRefreshing,
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    backgroundColor = AppColors.SurfaceMid,
+                    contentColor = AppColors.PrimaryGreen
+                )
+            }
+
+            if (tutorialMode) {
+                MainTutorialOverlay(
+                    onNext = onTutorialNext,
+                    onBack = onTutorialBack,
+                    onClose = onTutorialClose
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MainTutorialOverlay(
+    onNext: () -> Unit,
+    onBack: () -> Unit,
+    onClose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.28f)),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(AppColors.SurfaceMid, AppColors.SurfaceDark)
+                    )
+                )
+                .border(1.dp, AppColors.PrimaryGreen.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
+                .padding(18.dp)
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.tutorial_step_format, 4, 5),
+                    color = AppColors.PrimaryGreen,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = stringResource(R.string.tutorial_home_title),
+                    color = AppColors.TextPrimary,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.tutorial_home_description),
+                    color = AppColors.TextSecondary,
+                    fontSize = 15.sp,
+                    lineHeight = 23.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(
+                        onClick = onBack,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.TextSecondary)
+                    ) {
+                        Text(stringResource(R.string.tutorial_previous))
+                    }
+
+                    Button(
+                        onClick = onNext,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.PrimaryGreen)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.tutorial_next),
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedButton(
+                    onClick = onClose,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.TextSecondary)
+                ) {
+                    Text(stringResource(R.string.tutorial_close))
+                }
+            }
         }
     }
 }

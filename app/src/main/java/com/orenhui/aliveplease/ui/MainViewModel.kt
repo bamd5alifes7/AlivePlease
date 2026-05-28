@@ -56,7 +56,7 @@ class MainViewModel(
 
         feedbackJob?.cancel()
         feedbackJob = viewModelScope.launch {
-            delay(2000)
+            delay(CHECK_IN_FEEDBACK_DURATION_MILLIS)
             uiState = uiState.copy(showCheckInFeedback = false)
         }
 
@@ -132,6 +132,8 @@ class MainViewModel(
     }
 
     companion object {
+        private const val CHECK_IN_FEEDBACK_DURATION_MILLIS = 4_000L
+
         fun factory(context: Context): ViewModelProvider.Factory {
             val appContext = context.applicationContext
             return object : ViewModelProvider.Factory {

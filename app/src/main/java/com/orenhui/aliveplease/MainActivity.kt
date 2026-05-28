@@ -205,6 +205,83 @@ fun AlivePleaseApp(
                     navController.navigate("logs")
                 },
                 onReplayOnboarding = {},
+                onTutorialFinished = {
+                    navController.navigate("settings") {
+                        popUpTo("settings_tutorial") { inclusive = true }
+                    }
+                },
+                onTutorialShowHome = {
+                    navController.navigate("main_tutorial")
+                },
+                tutorialDisplayTotalSteps = 5,
+                tutorialMode = true
+            )
+        }
+
+        composable("settings_tutorial_preferences") {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSettingsSaved = onSettingsSaved,
+                onNavigateToLogs = {
+                    navController.navigate("logs")
+                },
+                onReplayOnboarding = {},
+                onTutorialFinished = {
+                    navController.navigate("settings") {
+                        popUpTo("settings_tutorial_preferences") { inclusive = true }
+                    }
+                },
+                onTutorialShowHome = {
+                    navController.navigate("main_tutorial")
+                },
+                tutorialStartIndex = 2,
+                tutorialDisplayTotalSteps = 5,
+                tutorialMode = true
+            )
+        }
+
+        composable("main_tutorial") {
+            MainScreen(
+                onNavigateToSettings = {},
+                tutorialMode = true,
+                onTutorialNext = {
+                    navController.navigate("settings_tutorial_finish") {
+                        popUpTo("main_tutorial") { inclusive = true }
+                    }
+                },
+                onTutorialBack = {
+                    navController.navigate("settings_tutorial_preferences") {
+                        popUpTo("main_tutorial") { inclusive = true }
+                    }
+                },
+                onTutorialClose = {
+                    navController.navigate("settings") {
+                        popUpTo("settings_tutorial") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("settings_tutorial_finish") {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSettingsSaved = onSettingsSaved,
+                onNavigateToLogs = {
+                    navController.navigate("logs")
+                },
+                onReplayOnboarding = {},
+                onTutorialFinished = {
+                    navController.navigate("settings") {
+                        popUpTo("settings_tutorial") { inclusive = true }
+                    }
+                },
+                tutorialStartIndex = 3,
+                tutorialDisplayStepOffset = 1,
+                tutorialDisplayTotalSteps = 5,
                 tutorialMode = true
             )
         }

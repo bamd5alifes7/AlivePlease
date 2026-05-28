@@ -33,6 +33,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -43,6 +44,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -85,6 +87,11 @@ fun SettingsScreen(
     onSettingsSaved: () -> Unit,
     onNavigateToLogs: () -> Unit,
     onReplayOnboarding: () -> Unit,
+    onTutorialFinished: () -> Unit = onNavigateBack,
+    onTutorialShowHome: () -> Unit = {},
+    tutorialStartIndex: Int = 0,
+    tutorialDisplayStepOffset: Int = 0,
+    tutorialDisplayTotalSteps: Int? = null,
     tutorialMode: Boolean = false
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -102,9 +109,10 @@ fun SettingsScreen(
     var notificationsEnabled by remember {
         mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled())
     }
+    var showReplayConfirmDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(tutorialMode) {
-        viewModel.reloadState(tutorialMode)
+    LaunchedEffect(tutorialMode, tutorialStartIndex) {
+        viewModel.reloadState(tutorialMode, tutorialStartIndex)
     }
 
     DisposableEffect(lifecycleOwner, context) {
@@ -122,65 +130,36 @@ fun SettingsScreen(
     val tutorialSteps = listOf(
         TutorialStep(
             key = TutorialKey.UserName,
-            title = stringResource(R.string.tutorial_user_name_title),
-            description = stringResource(R.string.tutorial_user_name_description),
-            requirement = TutorialRequirement.Required
-        ),
-        TutorialStep(
-            key = TutorialKey.CheckInInterval,
-            title = stringResource(R.string.tutorial_check_in_interval_title),
-            description = stringResource(R.string.tutorial_check_in_interval_description),
+            focusKeys = setOf(TutorialKey.UserName, TutorialKey.CheckInInterval),
+            title = stringResource(R.string.tutorial_pace_title),
+            description = stringResource(R.string.tutorial_pace_description),
             requirement = TutorialRequirement.Required
         ),
         TutorialStep(
             key = TutorialKey.FamilyInterval,
-            title = stringResource(R.string.tutorial_family_interval_title),
-            description = stringResource(R.string.tutorial_family_interval_description),
+            focusKeys = setOf(
+                TutorialKey.FamilyInterval,
+                TutorialKey.FamilyWarning,
+                TutorialKey.FamilyEmail,
+                TutorialKey.RecipientTitle
+            ),
+            title = stringResource(R.string.tutorial_family_title),
+            description = stringResource(R.string.tutorial_family_description),
             requirement = TutorialRequirement.Required
-        ),
-        TutorialStep(
-            key = TutorialKey.FamilyWarning,
-            title = stringResource(R.string.tutorial_family_warning_title),
-            description = stringResource(R.string.tutorial_family_warning_description),
-            requirement = TutorialRequirement.Required
-        ),
-        TutorialStep(
-            key = TutorialKey.FamilyEmail,
-            title = stringResource(R.string.tutorial_family_email_title),
-            description = stringResource(R.string.tutorial_family_email_description),
-            requirement = TutorialRequirement.Required
-        ),
-        TutorialStep(
-            key = TutorialKey.RecipientTitle,
-            title = stringResource(R.string.tutorial_recipient_title_title),
-            description = stringResource(R.string.tutorial_recipient_title_description),
-            requirement = TutorialRequirement.Optional
-        ),
-        TutorialStep(
-            key = TutorialKey.CareToggle,
-            title = stringResource(R.string.tutorial_care_toggle_title),
-            description = stringResource(R.string.tutorial_care_toggle_description),
-            requirement = TutorialRequirement.Optional
         ),
         TutorialStep(
             key = TutorialKey.QuietHours,
-            title = stringResource(R.string.tutorial_quiet_hours_title),
-            description = stringResource(R.string.tutorial_quiet_hours_description),
-            requirement = TutorialRequirement.Optional
-        ),
-        TutorialStep(
-            key = TutorialKey.Webhook,
-            title = stringResource(R.string.tutorial_webhook_title),
-            description = stringResource(R.string.tutorial_webhook_description),
-            requirement = TutorialRequirement.Optional
-        ),
-        TutorialStep(
-            key = TutorialKey.TestAndLogs,
-            title = stringResource(R.string.tutorial_test_and_logs_title),
-            description = stringResource(R.string.tutorial_test_and_logs_description),
+            focusKeys = setOf(
+                TutorialKey.CareToggle,
+                TutorialKey.QuietHours,
+                TutorialKey.Webhook,
+                TutorialKey.TestAndLogs
+            ),
+            title = stringResource(R.string.tutorial_preferences_title),
+            description = stringResource(R.string.tutorial_preferences_description),
             requirement = TutorialRequirement.Optional,
             overlayPlacement = TutorialOverlayPlacement.Top,
-            focusOffsetDp = 430
+            focusOffsetDp = 360
         ),
         TutorialStep(
             key = TutorialKey.Save,
@@ -195,7 +174,7 @@ fun SettingsScreen(
     val currentTargetScroll = currentStep?.key?.let { tutorialTargetPositions[it] }
 
     fun tutorialSectionModifier(sectionKey: TutorialKey?): Modifier {
-        val baseModifier = sectionModifier(currentStep?.key, sectionKey, tutorialMode)
+        val baseModifier = sectionModifier(currentStep?.focusKeys.orEmpty(), sectionKey, tutorialMode)
         if (!tutorialMode || sectionKey == null) return baseModifier
 
         return baseModifier.then(
@@ -209,6 +188,10 @@ fun SettingsScreen(
                 tutorialTargetPositions[sectionKey] = target
             }
         )
+    }
+
+    fun tutorialHighlighted(sectionKey: TutorialKey): Boolean {
+        return tutorialMode && currentStep?.focusKeys?.contains(sectionKey) == true
     }
 
     LaunchedEffect(uiState.tutorialStepIndex, tutorialMode, currentTargetScroll) {
@@ -303,7 +286,7 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.UserName),
-                    highlighted = currentStep?.key == TutorialKey.UserName && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.UserName),
                     eyebrow = stringResource(R.string.identity_section),
                     icon = "A",
                     title = stringResource(R.string.user_name_title)
@@ -315,13 +298,14 @@ fun SettingsScreen(
                         label = { Text(stringResource(R.string.display_name_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
+                        enabled = !tutorialMode,
                         colors = fieldColors
                     )
                 }
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.CheckInInterval),
-                    highlighted = currentStep?.key == TutorialKey.CheckInInterval && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.CheckInInterval),
                     eyebrow = stringResource(R.string.reminder_pacing_section),
                     icon = "1",
                     title = stringResource(R.string.check_in_interval)
@@ -334,6 +318,7 @@ fun SettingsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         isError = uiState.checkInIntervalError,
+                        enabled = !tutorialMode,
                         colors = fieldColors
                     )
 
@@ -352,7 +337,7 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.FamilyInterval),
-                    highlighted = currentStep?.key == TutorialKey.FamilyInterval && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.FamilyInterval),
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "2",
                     title = stringResource(R.string.family_wait_time_title)
@@ -365,6 +350,7 @@ fun SettingsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         isError = uiState.familyIntervalError,
+                        enabled = !tutorialMode,
                         colors = fieldColors
                     )
 
@@ -383,7 +369,7 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.FamilyWarning),
-                    highlighted = currentStep?.key == TutorialKey.FamilyWarning && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.FamilyWarning),
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "!",
                     title = stringResource(R.string.family_warning_before_title)
@@ -396,6 +382,7 @@ fun SettingsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         isError = uiState.familyWarningError,
+                        enabled = !tutorialMode,
                         colors = fieldColors
                     )
 
@@ -414,7 +401,7 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.FamilyEmail),
-                    highlighted = currentStep?.key == TutorialKey.FamilyEmail && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.FamilyEmail),
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "@",
                     title = stringResource(R.string.family_email)
@@ -427,6 +414,7 @@ fun SettingsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
                         isError = uiState.emailError,
+                        enabled = !tutorialMode,
                         colors = fieldColors
                     )
 
@@ -450,7 +438,7 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.RecipientTitle),
-                    highlighted = currentStep?.key == TutorialKey.RecipientTitle && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.RecipientTitle),
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "稱",
                     title = stringResource(R.string.recipient_title_label)
@@ -462,6 +450,7 @@ fun SettingsScreen(
                         label = { Text(stringResource(R.string.recipient_title_label_hint)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
+                        enabled = !tutorialMode,
                         supportingText = { Text(stringResource(R.string.recipient_title_supporting)) },
                         colors = fieldColors
                     )
@@ -510,6 +499,7 @@ fun SettingsScreen(
                         Switch(
                             checked = uiState.careNotificationEnabled,
                             onCheckedChange = viewModel::onCareNotificationEnabledChanged,
+                            enabled = !tutorialMode,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AppColors.PrimaryGreen,
@@ -522,7 +512,7 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.QuietHours),
-                    highlighted = currentStep?.key == TutorialKey.QuietHours && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.QuietHours),
                     eyebrow = stringResource(R.string.reminder_pacing_section),
                     icon = "Z",
                     title = stringResource(R.string.quiet_hours_title)
@@ -541,6 +531,7 @@ fun SettingsScreen(
                         Switch(
                             checked = uiState.quietHoursEnabled,
                             onCheckedChange = viewModel::onQuietHoursEnabledChanged,
+                            enabled = !tutorialMode,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AppColors.PrimaryGreen,
@@ -561,7 +552,7 @@ fun SettingsScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                             singleLine = true,
                             isError = uiState.quietHoursError,
-                            enabled = uiState.quietHoursEnabled,
+                            enabled = uiState.quietHoursEnabled && !tutorialMode,
                             colors = fieldColors
                         )
                         OutlinedTextField(
@@ -572,7 +563,7 @@ fun SettingsScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                             singleLine = true,
                             isError = uiState.quietHoursError,
-                            enabled = uiState.quietHoursEnabled,
+                            enabled = uiState.quietHoursEnabled && !tutorialMode,
                             colors = fieldColors
                         )
                     }
@@ -592,7 +583,7 @@ fun SettingsScreen(
 
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.Webhook),
-                    highlighted = currentStep?.key == TutorialKey.Webhook && tutorialMode,
+                    highlighted = tutorialHighlighted(TutorialKey.Webhook),
                     eyebrow = stringResource(R.string.advanced_section),
                     icon = "G",
                     title = stringResource(R.string.webhook_title)
@@ -604,6 +595,7 @@ fun SettingsScreen(
                         label = { Text(stringResource(R.string.webhook_default_label)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         singleLine = true,
+                        enabled = !tutorialMode,
                         colors = fieldColors
                     )
 
@@ -625,6 +617,7 @@ fun SettingsScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !tutorialMode,
                         border = ButtonDefaults.outlinedButtonBorder.copy(
                             brush = Brush.horizontalGradient(
                                 listOf(
@@ -647,6 +640,7 @@ fun SettingsScreen(
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !tutorialMode,
                         border = ButtonDefaults.outlinedButtonBorder.copy(
                             brush = Brush.horizontalGradient(
                                 listOf(
@@ -666,6 +660,7 @@ fun SettingsScreen(
                         OutlinedButton(
                             onClick = onNavigateToLogs,
                             modifier = Modifier.fillMaxWidth(),
+                            enabled = !tutorialMode,
                             border = ButtonDefaults.outlinedButtonBorder.copy(
                                 brush = Brush.horizontalGradient(
                                     listOf(
@@ -683,7 +678,13 @@ fun SettingsScreen(
 
                         if (!tutorialMode) {
                             OutlinedButton(
-                                onClick = onReplayOnboarding,
+                                onClick = {
+                                    if (viewModel.hasUnsavedChanges()) {
+                                        showReplayConfirmDialog = true
+                                    } else {
+                                        onReplayOnboarding()
+                                    }
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 border = ButtonDefaults.outlinedButtonBorder.copy(
                                     brush = Brush.horizontalGradient(
@@ -726,6 +727,7 @@ fun SettingsScreen(
                             }
                         },
                         modifier = Modifier.fillMaxSize(),
+                        enabled = !tutorialMode,
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
                         shape = RoundedCornerShape(16.dp),
@@ -743,14 +745,55 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(if (tutorialMode) 760.dp else 16.dp))
             }
 
+            if (showReplayConfirmDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        showReplayConfirmDialog = false
+                    },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.replay_tutorial_unsaved_title),
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Text(stringResource(R.string.replay_tutorial_unsaved_message))
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showReplayConfirmDialog = false
+                            }
+                        ) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showReplayConfirmDialog = false
+                                onReplayOnboarding()
+                            }
+                        ) {
+                            Text(stringResource(R.string.discard_and_replay))
+                        }
+                    },
+                    containerColor = AppColors.SurfaceMid,
+                    titleContentColor = AppColors.TextPrimary,
+                    textContentColor = AppColors.TextSecondary
+                )
+            }
+
             if (tutorialMode && currentStep != null) {
                 TutorialOverlay(
                     step = currentStep,
-                    stepIndex = uiState.tutorialStepIndex,
-                    totalSteps = tutorialSteps.size,
+                    stepIndex = uiState.tutorialStepIndex + tutorialDisplayStepOffset,
+                    totalSteps = tutorialDisplayTotalSteps ?: tutorialSteps.size,
                     onNext = {
-                        if (viewModel.onTutorialNext(tutorialSteps.lastIndex)) {
-                            onNavigateBack()
+                        if (currentStep?.key == TutorialKey.QuietHours) {
+                            onTutorialShowHome()
+                        } else if (viewModel.onTutorialNext(tutorialSteps.lastIndex)) {
+                            onTutorialFinished()
                         }
                     },
                     onBack = {
@@ -875,6 +918,7 @@ private fun SettingsHeroCard(
                 OutlinedButton(
                     onClick = onOpenNotificationSettings,
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !tutorialMode,
                     border = ButtonDefaults.outlinedButtonBorder.copy(
                         brush = Brush.horizontalGradient(
                             listOf(
@@ -967,6 +1011,7 @@ private enum class TutorialOverlayPlacement {
 
 private data class TutorialStep(
     val key: TutorialKey,
+    val focusKeys: Set<TutorialKey> = setOf(key),
     val title: String,
     val description: String,
     val requirement: TutorialRequirement,
@@ -975,12 +1020,12 @@ private data class TutorialStep(
 )
 
 private fun sectionModifier(
-    currentKey: TutorialKey?,
+    currentKeys: Set<TutorialKey>,
     sectionKey: TutorialKey?,
     tutorialMode: Boolean
 ): Modifier {
     if (!tutorialMode) return Modifier
-    val highlighted = currentKey == sectionKey && sectionKey != null
+    val highlighted = sectionKey != null && currentKeys.contains(sectionKey)
     val dimmed = !highlighted
     return Modifier
         .alpha(if (dimmed) 0.33f else 1f)

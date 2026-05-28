@@ -25,6 +25,8 @@
     <string name="save_settings">儲存設定</string>
     <string name="settings_saved">設定已更新</string>
     <string name="settings_invalid">設定失敗。請上滑，檢查紅字提示。</string>
+    <string name="cancel">取消</string>
+    <string name="discard_and_replay">放棄並重看</string>
     <string name="hours">小時</string>
     <string name="email_hint">請輸入收件人的 Email</string>
     <string name="invalid_email">Email 格式看起來不正確</string>
@@ -38,6 +40,8 @@
     <string name="open_logs">查看執行紀錄</string>
     <string name="view_logs">查看紀錄</string>
     <string name="replay_onboarding">重看引導教學</string>
+    <string name="replay_tutorial_unsaved_title">尚未儲存設定</string>
+    <string name="replay_tutorial_unsaved_message">重看導覽會放棄目前尚未儲存的內容。</string>
     <string name="identity_section">身份</string>
     <string name="reminder_pacing_section">提醒節奏</string>
     <string name="quiet_hours_title">夜間安靜時段</string>
@@ -85,7 +89,7 @@
     <string name="settings_center_title">設定中心</string>
     <string name="settings_hero_tutorial_title">導覽中的設定頁</string>
     <string name="settings_hero_title">把通知節奏調到剛剛好</string>
-    <string name="settings_hero_tutorial_description">你現在看到的是逐步導覽模式，系統會一步一步帶你理解每個欄位。</string>
+    <string name="settings_hero_tutorial_description">先看一次設定流程；導覽中不會輸入資料，完成後再回來填寫。</string>
     <string name="settings_hero_description">這裡決定了日常提醒、通知親友，以及寄信流程的主要行為。</string>
     <string name="status_care_reminder">關懷提醒</string>
     <string name="status_family_notification">親友通知</string>
@@ -95,6 +99,14 @@
     <string name="status_configured">已設定</string>
     <string name="status_default_value">預設</string>
     <string name="status_custom_value">自訂</string>
+    <string name="tutorial_pace_title">報平安提醒</string>
+    <string name="tutorial_pace_description">這裡決定通知裡顯示的名字，以及 App 多久提醒你回來按一次「我還活著」。</string>
+    <string name="tutorial_family_title">親友通知條件</string>
+    <string name="tutorial_family_description">這一區決定太久沒打卡時，要等多久、通知誰，以及寄信前多久先提醒你。</string>
+    <string name="tutorial_preferences_title">輔助提醒與進階選項</string>
+    <string name="tutorial_preferences_description">關懷提醒、安靜時段和寄信服務設定都在這裡。多數情況保留預設即可。</string>
+    <string name="tutorial_home_title">主畫面打卡</string>
+    <string name="tutorial_home_description">主畫面是每天使用的地方。按下「我還活著」後，App 會記錄今天的報平安，並重新計算親友通知時間。</string>
     <string name="tutorial_user_name_title">先設定你的名字</string>
     <string name="tutorial_user_name_description">這個名字會出現在通知與寄信內容裡，讓收到訊息的人知道是誰。</string>
     <string name="tutorial_check_in_interval_title">設定提醒你打卡的頻率</string>
@@ -115,11 +127,11 @@
     <string name="tutorial_quiet_hours_description">安靜時段內，打卡提醒與關懷提醒會先不打擾你，等結束時間再出現。預設是 23:00 到 07:00。</string>
     <string name="tutorial_test_and_logs_title">查看最近的執行紀錄</string>
     <string name="tutorial_test_and_logs_description">這裡會保留最近的排程與寄信結果。當你想確認提醒是否重排、測試信是否送出時，可以回來查看。</string>
-    <string name="tutorial_save_title">儲存後才會開始生效</string>
-    <string name="tutorial_save_description">前面的欄位都只是暫時輸入。按下儲存後，App 才會更新打卡提醒、親友通知時間，以及寄信前的手機提醒。</string>
+    <string name="tutorial_save_title">開始填寫設定</string>
+    <string name="tutorial_save_description">完成導覽後，先填必要資料，再視需要微調時間。</string>
     <string name="tutorial_step_format">步驟 %1$d / %2$d</string>
-    <string name="tutorial_minimum_setup_title">儲存前確認</string>
-    <string name="tutorial_minimum_setup_steps">1. 名字是否正確\n2. 親友 Email 是否可用\n3. 太久沒打卡時多久後寄信\n4. 寄信前多久先提醒你</string>
+    <string name="tutorial_minimum_setup_title">最小設定</string>
+    <string name="tutorial_minimum_setup_steps">你的姓名、收件人稱呼、收件人 Email。</string>
     <string name="tutorial_leave_first">先離開</string>
     <string name="tutorial_previous">上一步</string>
     <string name="tutorial_complete">完成教學</string>

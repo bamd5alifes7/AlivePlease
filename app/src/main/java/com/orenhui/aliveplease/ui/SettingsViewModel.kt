@@ -44,7 +44,7 @@ class SettingsViewModel(
         reloadState(false)
     }
 
-    fun reloadState(tutorialMode: Boolean) {
+    fun reloadState(tutorialMode: Boolean, tutorialStartIndex: Int = 0) {
         val current = dataStore.getFamilyNotifyIntervalFloat()
         uiState = SettingsUiState(
             userName = dataStore.getUserName(),
@@ -58,7 +58,7 @@ class SettingsViewModel(
             quietHoursEnabled = dataStore.isQuietHoursEnabled(),
             quietHoursStart = formatMinutes(dataStore.getQuietHoursStartMinutes()),
             quietHoursEnd = formatMinutes(dataStore.getQuietHoursEndMinutes()),
-            tutorialStepIndex = if (tutorialMode) 0 else -1
+            tutorialStepIndex = if (tutorialMode) tutorialStartIndex else -1
         )
     }
 
@@ -130,6 +130,22 @@ class SettingsViewModel(
             return false
         }
         return true
+    }
+
+    fun hasUnsavedChanges(): Boolean {
+        val state = uiState
+        return state.userName.trim().ifBlank { dataStore.getUserName() } != dataStore.getUserName() ||
+            state.checkInInterval.trim() != dataStore.getNotifyInterval().toString() ||
+            state.familyInterval.trim() != formatHours(dataStore.getFamilyNotifyIntervalFloat()) ||
+            state.familyWarningBefore.trim() != formatHours(dataStore.getFamilyWarningBeforeHours()) ||
+            state.familyEmail.trim() != dataStore.getFamilyEmail() ||
+            state.familyRecipientTitle.trim().ifBlank { dataStore.getFamilyRecipientTitle() } !=
+            dataStore.getFamilyRecipientTitle() ||
+            state.gasWebhookUrl.trim() != dataStore.getStoredGasWebhookUrl() ||
+            state.careNotificationEnabled != dataStore.isCareNotificationOn() ||
+            state.quietHoursEnabled != dataStore.isQuietHoursEnabled() ||
+            state.quietHoursStart.trim() != formatMinutes(dataStore.getQuietHoursStartMinutes()) ||
+            state.quietHoursEnd.trim() != formatMinutes(dataStore.getQuietHoursEndMinutes())
     }
 
     suspend fun sendTestEmail(): String {
