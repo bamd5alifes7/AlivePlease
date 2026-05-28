@@ -207,7 +207,8 @@ fun AlivePleaseApp(
                 onReplayOnboarding = {},
                 onTutorialFinished = {
                     navController.navigate("settings") {
-                        popUpTo("settings_tutorial") { inclusive = true }
+                        popUpTo("settings")
+                        launchSingleTop = true
                     }
                 },
                 onTutorialShowHome = {
@@ -230,13 +231,42 @@ fun AlivePleaseApp(
                 onReplayOnboarding = {},
                 onTutorialFinished = {
                     navController.navigate("settings") {
-                        popUpTo("settings_tutorial_preferences") { inclusive = true }
+                        popUpTo("settings")
+                        launchSingleTop = true
                     }
                 },
                 onTutorialShowHome = {
                     navController.navigate("main_tutorial")
                 },
                 tutorialStartIndex = 2,
+                tutorialDisplayTotalSteps = 5,
+                tutorialMode = true
+            )
+        }
+
+        composable("settings_tutorial_finish") {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSettingsSaved = onSettingsSaved,
+                onNavigateToLogs = {
+                    navController.navigate("logs")
+                },
+                onReplayOnboarding = {},
+                onTutorialFinished = {
+                    navController.navigate("settings") {
+                        popUpTo("settings")
+                        launchSingleTop = true
+                    }
+                },
+                onTutorialShowHome = {
+                    navController.navigate("main_tutorial") {
+                        popUpTo("settings_tutorial_finish") { inclusive = true }
+                    }
+                },
+                tutorialStartIndex = 3,
+                tutorialDisplayStepOffset = 1,
                 tutorialDisplayTotalSteps = 5,
                 tutorialMode = true
             )
@@ -258,31 +288,10 @@ fun AlivePleaseApp(
                 },
                 onTutorialClose = {
                     navController.navigate("settings") {
-                        popUpTo("settings_tutorial") { inclusive = true }
+                        popUpTo("settings")
+                        launchSingleTop = true
                     }
                 }
-            )
-        }
-
-        composable("settings_tutorial_finish") {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onSettingsSaved = onSettingsSaved,
-                onNavigateToLogs = {
-                    navController.navigate("logs")
-                },
-                onReplayOnboarding = {},
-                onTutorialFinished = {
-                    navController.navigate("settings") {
-                        popUpTo("settings_tutorial") { inclusive = true }
-                    }
-                },
-                tutorialStartIndex = 3,
-                tutorialDisplayStepOffset = 1,
-                tutorialDisplayTotalSteps = 5,
-                tutorialMode = true
             )
         }
 

@@ -130,48 +130,56 @@ fun SettingsScreen(
     val tutorialSteps = listOf(
         TutorialStep(
             key = TutorialKey.UserName,
-            focusKeys = setOf(TutorialKey.UserName, TutorialKey.CheckInInterval),
-            title = stringResource(R.string.tutorial_pace_title),
-            description = stringResource(R.string.tutorial_pace_description),
-            requirement = TutorialRequirement.Required
-        ),
-        TutorialStep(
-            key = TutorialKey.FamilyInterval,
             focusKeys = setOf(
-                TutorialKey.FamilyInterval,
-                TutorialKey.FamilyWarning,
+                TutorialKey.UserName,
+                TutorialKey.RecipientTitle,
                 TutorialKey.FamilyEmail,
-                TutorialKey.RecipientTitle
+                TutorialKey.FamilyInterval
             ),
-            title = stringResource(R.string.tutorial_family_title),
-            description = stringResource(R.string.tutorial_family_description),
+            title = stringResource(R.string.tutorial_notification_settings_title),
+            description = stringResource(R.string.tutorial_notification_settings_description),
             requirement = TutorialRequirement.Required
         ),
         TutorialStep(
-            key = TutorialKey.QuietHours,
+            key = TutorialKey.CheckInInterval,
             focusKeys = setOf(
+                TutorialKey.CheckInInterval,
+                TutorialKey.FamilyWarning,
                 TutorialKey.CareToggle,
-                TutorialKey.QuietHours,
-                TutorialKey.Webhook,
-                TutorialKey.TestAndLogs
+                TutorialKey.QuietHours
             ),
-            title = stringResource(R.string.tutorial_preferences_title),
-            description = stringResource(R.string.tutorial_preferences_description),
+            title = stringResource(R.string.tutorial_reminder_types_title),
+            description = stringResource(R.string.tutorial_reminder_types_description),
+            requirement = TutorialRequirement.Optional,
+            overlayPlacement = TutorialOverlayPlacement.Top
+        ),
+        TutorialStep(
+            key = TutorialKey.Webhook,
+            focusKeys = setOf(
+                TutorialKey.Webhook,
+                TutorialKey.TestEmail
+            ),
+            title = stringResource(R.string.tutorial_mail_test_title),
+            description = stringResource(R.string.tutorial_mail_test_description),
             requirement = TutorialRequirement.Optional,
             overlayPlacement = TutorialOverlayPlacement.Top,
-            focusOffsetDp = 360
+            focusOffsetDp = 520
         ),
         TutorialStep(
-            key = TutorialKey.Save,
-            title = stringResource(R.string.tutorial_save_title),
-            description = stringResource(R.string.tutorial_save_description),
-            requirement = TutorialRequirement.Required,
-            overlayPlacement = TutorialOverlayPlacement.Top,
-            focusOffsetDp = 640
+            key = TutorialKey.MinimumSetup,
+            focusKeys = setOf(
+                TutorialKey.UserName,
+                TutorialKey.RecipientTitle,
+                TutorialKey.FamilyEmail
+            ),
+            scrollKey = TutorialKey.UserName,
+            title = stringResource(R.string.tutorial_minimum_setup_title),
+            description = stringResource(R.string.tutorial_minimum_setup_description),
+            requirement = TutorialRequirement.Required
         )
     )
     val currentStep = tutorialSteps.getOrNull(uiState.tutorialStepIndex)
-    val currentTargetScroll = currentStep?.key?.let { tutorialTargetPositions[it] }
+    val currentTargetScroll = currentStep?.scrollKey?.let { tutorialTargetPositions[it] }
 
     fun tutorialSectionModifier(sectionKey: TutorialKey?): Modifier {
         val baseModifier = sectionModifier(currentStep?.focusKeys.orEmpty(), sectionKey, tutorialMode)
@@ -284,10 +292,15 @@ fun SettingsScreen(
                     }
                 )
 
+                SettingGroupHeader(
+                    title = stringResource(R.string.family_group_title),
+                    description = stringResource(R.string.family_group_description)
+                )
+
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.UserName),
                     highlighted = tutorialHighlighted(TutorialKey.UserName),
-                    eyebrow = stringResource(R.string.identity_section),
+                    eyebrow = stringResource(R.string.family_notification_section),
                     icon = "A",
                     title = stringResource(R.string.user_name_title)
                 ) {
@@ -299,103 +312,38 @@ fun SettingsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
                         enabled = !tutorialMode,
-                        colors = fieldColors
-                    )
-                }
-
-                SettingSection(
-                    modifier = tutorialSectionModifier(TutorialKey.CheckInInterval),
-                    highlighted = tutorialHighlighted(TutorialKey.CheckInInterval),
-                    eyebrow = stringResource(R.string.reminder_pacing_section),
-                    icon = "1",
-                    title = stringResource(R.string.check_in_interval)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.checkInInterval,
-                        onValueChange = viewModel::onCheckInIntervalChanged,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.check_in_interval_label)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        isError = uiState.checkInIntervalError,
-                        enabled = !tutorialMode,
-                        colors = fieldColors
-                    )
-
-                    Text(
-                        text = if (uiState.checkInIntervalError) {
-                            stringResource(R.string.check_in_interval_error)
-                        } else {
-                            stringResource(R.string.check_in_interval_description)
+                        supportingText = {
+                            Text(
+                                text = stringResource(R.string.display_name_supporting),
+                                color = AppColors.TextSecondary
+                            )
                         },
-                        color = if (uiState.checkInIntervalError) AppColors.Error else AppColors.TextHint,
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                        colors = fieldColors
                     )
                 }
 
                 SettingSection(
-                    modifier = tutorialSectionModifier(TutorialKey.FamilyInterval),
-                    highlighted = tutorialHighlighted(TutorialKey.FamilyInterval),
+                    modifier = tutorialSectionModifier(TutorialKey.RecipientTitle),
+                    highlighted = tutorialHighlighted(TutorialKey.RecipientTitle),
                     eyebrow = stringResource(R.string.family_notification_section),
-                    icon = "2",
-                    title = stringResource(R.string.family_wait_time_title)
+                    icon = "稱",
+                    title = stringResource(R.string.recipient_title_label)
                 ) {
                     OutlinedTextField(
-                        value = uiState.familyInterval,
-                        onValueChange = viewModel::onFamilyIntervalChanged,
+                        value = uiState.familyRecipientTitle,
+                        onValueChange = viewModel::onFamilyRecipientTitleChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.family_wait_time_label)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        label = { Text(stringResource(R.string.recipient_title_label_hint)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
-                        isError = uiState.familyIntervalError,
                         enabled = !tutorialMode,
-                        colors = fieldColors
-                    )
-
-                    Text(
-                        text = if (uiState.familyIntervalError) {
-                            stringResource(R.string.family_wait_time_error)
-                        } else {
-                            stringResource(R.string.family_wait_time_description)
+                        supportingText = {
+                            Text(
+                                text = stringResource(R.string.recipient_title_supporting),
+                                color = AppColors.TextSecondary
+                            )
                         },
-                        color = if (uiState.familyIntervalError) AppColors.Error else AppColors.TextHint,
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-                    )
-                }
-
-                SettingSection(
-                    modifier = tutorialSectionModifier(TutorialKey.FamilyWarning),
-                    highlighted = tutorialHighlighted(TutorialKey.FamilyWarning),
-                    eyebrow = stringResource(R.string.family_notification_section),
-                    icon = "!",
-                    title = stringResource(R.string.family_warning_before_title)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.familyWarningBefore,
-                        onValueChange = viewModel::onFamilyWarningBeforeChanged,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.family_warning_before_label)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        isError = uiState.familyWarningError,
-                        enabled = !tutorialMode,
                         colors = fieldColors
-                    )
-
-                    Text(
-                        text = if (uiState.familyWarningError) {
-                            stringResource(R.string.family_warning_before_error)
-                        } else {
-                            stringResource(R.string.family_warning_before_description)
-                        },
-                        color = if (uiState.familyWarningError) AppColors.Error else AppColors.TextHint,
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                     )
                 }
 
@@ -437,22 +385,103 @@ fun SettingsScreen(
                 }
 
                 SettingSection(
-                    modifier = tutorialSectionModifier(TutorialKey.RecipientTitle),
-                    highlighted = tutorialHighlighted(TutorialKey.RecipientTitle),
+                    modifier = tutorialSectionModifier(TutorialKey.FamilyInterval),
+                    highlighted = tutorialHighlighted(TutorialKey.FamilyInterval),
                     eyebrow = stringResource(R.string.family_notification_section),
-                    icon = "稱",
-                    title = stringResource(R.string.recipient_title_label)
+                    icon = "2",
+                    title = stringResource(R.string.family_wait_time_title)
                 ) {
                     OutlinedTextField(
-                        value = uiState.familyRecipientTitle,
-                        onValueChange = viewModel::onFamilyRecipientTitleChanged,
+                        value = uiState.familyInterval,
+                        onValueChange = viewModel::onFamilyIntervalChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.recipient_title_label_hint)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                        label = { Text(stringResource(R.string.family_wait_time_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
+                        isError = uiState.familyIntervalError,
                         enabled = !tutorialMode,
-                        supportingText = { Text(stringResource(R.string.recipient_title_supporting)) },
                         colors = fieldColors
+                    )
+
+                    Text(
+                        text = if (uiState.familyIntervalError) {
+                            stringResource(R.string.family_wait_time_error)
+                        } else {
+                            stringResource(R.string.family_wait_time_description)
+                        },
+                        color = if (uiState.familyIntervalError) AppColors.Error else AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+                }
+
+                SettingGroupHeader(
+                    title = stringResource(R.string.reminder_group_title),
+                    description = stringResource(R.string.reminder_group_description)
+                )
+
+                SettingSection(
+                    modifier = tutorialSectionModifier(TutorialKey.CheckInInterval),
+                    highlighted = tutorialHighlighted(TutorialKey.CheckInInterval),
+                    eyebrow = stringResource(R.string.reminder_pacing_section),
+                    icon = "1",
+                    title = stringResource(R.string.check_in_interval)
+                ) {
+                    OutlinedTextField(
+                        value = uiState.checkInInterval,
+                        onValueChange = viewModel::onCheckInIntervalChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.check_in_interval_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        isError = uiState.checkInIntervalError,
+                        enabled = !tutorialMode,
+                        colors = fieldColors
+                    )
+
+                    Text(
+                        text = if (uiState.checkInIntervalError) {
+                            stringResource(R.string.check_in_interval_error)
+                        } else {
+                            stringResource(R.string.check_in_interval_description)
+                        },
+                        color = if (uiState.checkInIntervalError) AppColors.Error else AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+                }
+
+                SettingSection(
+                    modifier = tutorialSectionModifier(TutorialKey.FamilyWarning),
+                    highlighted = tutorialHighlighted(TutorialKey.FamilyWarning),
+                    eyebrow = stringResource(R.string.reminder_pacing_section),
+                    icon = "!",
+                    title = stringResource(R.string.family_warning_before_title)
+                ) {
+                    OutlinedTextField(
+                        value = uiState.familyWarningBefore,
+                        onValueChange = viewModel::onFamilyWarningBeforeChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.family_warning_before_label)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        isError = uiState.familyWarningError,
+                        enabled = !tutorialMode,
+                        colors = fieldColors
+                    )
+
+                    Text(
+                        text = if (uiState.familyWarningError) {
+                            stringResource(R.string.family_warning_before_error)
+                        } else {
+                            stringResource(R.string.family_warning_before_description)
+                        },
+                        color = if (uiState.familyWarningError) AppColors.Error else AppColors.TextHint,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                     )
                 }
 
@@ -581,6 +610,11 @@ fun SettingsScreen(
                     )
                 }
 
+                SettingGroupHeader(
+                    title = stringResource(R.string.advanced_group_title),
+                    description = stringResource(R.string.advanced_group_description)
+                )
+
                 SettingSection(
                     modifier = tutorialSectionModifier(TutorialKey.Webhook),
                     highlighted = tutorialHighlighted(TutorialKey.Webhook),
@@ -611,30 +645,6 @@ fun SettingsScreen(
 
                     OutlinedButton(
                         onClick = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(sendingTestEmailMessage)
-                                snackbarHostState.showSnackbar(viewModel.sendTestEmail())
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !tutorialMode,
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = Brush.horizontalGradient(
-                                listOf(
-                                    AppColors.PrimaryGreen.copy(alpha = 0.7f),
-                                    AppColors.PrimaryGreenDim.copy(alpha = 0.7f)
-                                )
-                            )
-                        ),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.PrimaryGreen)
-                    ) {
-                        Text(stringResource(R.string.send_test_email), fontWeight = FontWeight.SemiBold)
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    OutlinedButton(
-                        onClick = {
                             context.startActivity(
                                 Intent(Intent.ACTION_VIEW, Uri.parse(GAS_DOCS_URL))
                             )
@@ -653,9 +663,78 @@ fun SettingsScreen(
                     ) {
                         Text(stringResource(R.string.open_gas_docs), fontWeight = FontWeight.Medium)
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(sendingTestEmailMessage)
+                                snackbarHostState.showSnackbar(viewModel.sendTestEmail())
+                            }
+                        },
+                        modifier = tutorialSectionModifier(TutorialKey.TestEmail).fillMaxWidth(),
+                        enabled = !tutorialMode,
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    AppColors.PrimaryGreen.copy(alpha = 0.7f),
+                                    AppColors.PrimaryGreenDim.copy(alpha = 0.7f)
+                                )
+                            )
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.PrimaryGreen)
+                    ) {
+                        Text(stringResource(R.string.send_test_email), fontWeight = FontWeight.SemiBold)
+                    }
                 }
 
-                DarkCard(modifier = tutorialSectionModifier(TutorialKey.TestAndLogs)) {
+                SettingGroupHeader(
+                    title = stringResource(R.string.test_group_title),
+                    description = stringResource(R.string.test_group_description)
+                )
+
+                Box(
+                    modifier = tutorialSectionModifier(TutorialKey.Save)
+                        .fillMaxWidth()
+                        .height(58.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(AppColors.PrimaryGreen, AppColors.PrimaryGreenDim)
+                            )
+                        )
+                ) {
+                    Button(
+                        onClick = {
+                            if (viewModel.saveSettings()) {
+                                onSettingsSaved()
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(settingsSavedMessage)
+                                }
+                            } else {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(invalidSettingsMessage)
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                        enabled = !tutorialMode,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues()
+                    ) {
+                        Text(
+                            text = stringResource(R.string.save_settings),
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                DarkCard(modifier = tutorialSectionModifier(TutorialKey.LogsAndGuide)) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                         OutlinedButton(
                             onClick = onNavigateToLogs,
@@ -699,46 +778,6 @@ fun SettingsScreen(
                                 Text(stringResource(R.string.replay_onboarding), fontWeight = FontWeight.Medium)
                             }
                         }
-                    }
-                }
-
-                Box(
-                    modifier = tutorialSectionModifier(TutorialKey.Save)
-                        .fillMaxWidth()
-                        .height(58.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(AppColors.PrimaryGreen, AppColors.PrimaryGreenDim)
-                            )
-                        )
-                ) {
-                    Button(
-                        onClick = {
-                            if (viewModel.saveSettings()) {
-                                onSettingsSaved()
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(settingsSavedMessage)
-                                }
-                            } else {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(invalidSettingsMessage)
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                        enabled = !tutorialMode,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        contentPadding = PaddingValues()
-                    ) {
-                        Text(
-                            text = stringResource(R.string.save_settings),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
                     }
                 }
 
@@ -790,14 +829,16 @@ fun SettingsScreen(
                     stepIndex = uiState.tutorialStepIndex + tutorialDisplayStepOffset,
                     totalSteps = tutorialDisplayTotalSteps ?: tutorialSteps.size,
                     onNext = {
-                        if (currentStep?.key == TutorialKey.QuietHours) {
+                        if (currentStep.key == TutorialKey.Webhook) {
                             onTutorialShowHome()
                         } else if (viewModel.onTutorialNext(tutorialSteps.lastIndex)) {
                             onTutorialFinished()
                         }
                     },
                     onBack = {
-                        if (viewModel.onTutorialBack()) {
+                        if (currentStep.key == TutorialKey.MinimumSetup) {
+                            onTutorialShowHome()
+                        } else if (viewModel.onTutorialBack()) {
                             onNavigateBack()
                         }
                     },
@@ -971,6 +1012,32 @@ private fun StatusChip(
     }
 }
 
+@Composable
+private fun SettingGroupHeader(
+    title: String,
+    description: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 2.dp)
+    ) {
+        Text(
+            text = title,
+            color = AppColors.TextPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = description,
+            color = AppColors.TextHint,
+            fontSize = 13.sp,
+            lineHeight = 19.sp
+        )
+    }
+}
+
 private enum class TutorialKey {
     UserName,
     CheckInInterval,
@@ -981,8 +1048,10 @@ private enum class TutorialKey {
     CareToggle,
     QuietHours,
     Webhook,
-    TestAndLogs,
-    Save
+    TestEmail,
+    LogsAndGuide,
+    Save,
+    MinimumSetup
 }
 
 private const val GAS_DOCS_URL = "https://github.com/bamd5alifes7/AlivePlease/blob/master/docs/AlivePleaseWebhook.md"
@@ -1012,6 +1081,7 @@ private enum class TutorialOverlayPlacement {
 private data class TutorialStep(
     val key: TutorialKey,
     val focusKeys: Set<TutorialKey> = setOf(key),
+    val scrollKey: TutorialKey = key,
     val title: String,
     val description: String,
     val requirement: TutorialRequirement,
@@ -1106,39 +1176,6 @@ private fun TutorialOverlay(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                if (step.key == TutorialKey.Save) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(AppColors.PrimaryGreen.copy(alpha = 0.10f))
-                            .border(
-                                1.dp,
-                                AppColors.PrimaryGreen.copy(alpha = 0.28f),
-                                RoundedCornerShape(16.dp)
-                            )
-                            .padding(12.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.tutorial_minimum_setup_title),
-                                color = AppColors.TextPrimary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = stringResource(R.string.tutorial_minimum_setup_steps),
-                                color = AppColors.TextSecondary,
-                                fontSize = 14.sp,
-                                lineHeight = 21.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
