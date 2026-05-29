@@ -1,6 +1,6 @@
 # Alive Please 規格文件
 
-最後整理日期：2026-05-24
+最後整理日期：2026-05-29
 
 本文件整理目前 repository 中可觀察到的產品與技術規格，主要依據 Android App 程式碼、Google Apps Script Webhook、既有 README/docs 與測試案例推導。未在程式中明確實作的內容會標示為「待確認」或「已知限制」。
 
@@ -28,12 +28,14 @@ Alive Please 是一個 Android 自我報平安 App。使用者透過每日或定
 - App 依 `is_first_launch` 決定起始頁。
 - 首次啟動顯示 Onboarding。
 - Onboarding 主要操作會：
-  - 將首次啟動狀態設為完成。
-  - 進入首頁。
-  - 接著導向設定教學頁。
+  - 設定 `setup_tutorial_pending`，避免首次導覽導航中斷時遺失使用者意圖。
+  - 直接導向設定教學頁。
+  - 進入設定教學頁後，才將首次啟動狀態設為完成。
 - Onboarding 次要操作會：
   - 將首次啟動狀態設為完成。
+  - 清除 `setup_tutorial_pending`。
   - 直接進入首頁。
+- 若使用者按下開始設定後意外落到首頁，首頁會消耗 `setup_tutorial_pending` 並再次導向設定教學頁。
 
 ### 3.2 首頁打卡
 
@@ -50,6 +52,7 @@ Alive Please 是一個 Android 自我報平安 App。使用者透過每日或定
   - 若今天尚未打卡，將今天加入 `check_in_dates`。
   - 累積打卡天數設為打卡日期集合數量。
   - 重新排程家人通知。
+  - 重新排程打卡提醒，避免剛打卡後仍收到上一輪提醒。
   - 顯示打卡成功回饋約 2 秒。
 - 若連續打卡天數為 3 的倍數，顯示祝福卡約 6 秒。
 - 首頁照護訊息：
@@ -104,6 +107,8 @@ Alive Please 是一個 Android 自我報平安 App。使用者透過每日或定
 - 將非目標區塊降低透明度。
 - 將說明浮層固定在畫面底部。
 - 最後一步顯示最低設定需求。
+- 設定教學與一般設定頁使用不同 ViewModel key，避免普通設定狀態與教學狀態互相殘留。
+- 設定教學 ViewModel 建立時即以教學模式初始化，不依賴進入畫面後再切換狀態。
 
 ## 4. 背景任務與通知規格
 
@@ -126,6 +131,11 @@ App 建立 3 個通知 channel：
 - 使用 PeriodicWorkRequest 排程 `CheckInReminderWorker`。
 - 週期取自 `notify_interval`，預設 12 小時。
 - ExistingPeriodicWorkPolicy 使用 `UPDATE`。
+- 排程時會依 `last_check_in_time + notify_interval` 設定初始延遲。
+- 使用者打卡後會重新排程打卡提醒，並取消延後的安靜時段提醒。
+- Worker 觸發時會先檢查距上次打卡是否已超過 `notify_interval`：
+  - 若尚未超過，不發通知，並依最新打卡時間重新排程。
+  - 若已超過，才進入安靜時段與通知發送判斷。
 - 若觸發時在安靜時段內：
   - 不立刻發通知。
   - 改以一次性工作延後到安靜時段結束。
@@ -188,7 +198,7 @@ App 建立 3 個通知 channel：
 - `LOCKED_BOOT_COMPLETED`
 - `MY_PACKAGE_REPLACED`
 
-收到後呼叫 `WorkSchedulerHelper.rescheduleAll()`，依目前設定重建照護提醒與家人通知排程。
+收到後呼叫 `WorkSchedulerHelper.rescheduleAll()`，依目前設定重建打卡提醒、照護提醒與家人通知排程。
 
 ## 5. 資料與狀態
 
@@ -211,6 +221,7 @@ App 建立 3 個通知 channel：
 | `quiet_hours_end_minutes` | 安靜時段結束分鐘 | `420`，即 07:00 |
 | `execution_logs` | 執行紀錄，`||` 分隔 | 空 |
 | `is_first_launch` | 是否首次啟動 | `true` |
+| `setup_tutorial_pending` | 首次設定導覽待導向旗標 | `false` |
 | `user_name` | 使用者名稱 | 程式內預設字串 |
 
 打卡日期使用裝置 locale 的 `SimpleDateFormat("yyyy-MM-dd")` 產生。連續打卡天數使用 `LocalDate.parse()` 解析 ISO local date 字串，從最新日期往前連續計算。
@@ -321,12 +332,14 @@ GAS 端會：
 - Webhook response `ok=false` 與非 JSON body 的處理。
 - 設定儲存時 Email、時間、小數等待時間的驗證。
 - BootReceiver 重新排程行為。
+- 首次 Onboarding 按下開始設定後導向設定教學，且不會落回首頁。
+- 打卡後打卡提醒重新排程，未超過提醒週期時不發提醒。
 
 ## 8. 已知限制與待確認事項
 
 - 內建 GAS Webhook URL 存在於 App 程式碼，是否應改為空值、建置變數或使用者必填，待確認。
 - 家人通知會使用 Email 做逾時通知；目前沒有 SMS、通訊軟體、推播給家人等替代渠道。
-- 打卡提醒是固定週期 WorkManager，未明確記錄「下一次打卡提醒」時間。
+- 打卡提醒仍由 PeriodicWorkRequest 驅動，精準觸發時間受 WorkManager 排程與系統省電影響。
 - 家人通知不套用安靜時段；目前只有照護提醒與打卡提醒會避開安靜時段。
 - `alive_days` 以不同日期打卡數計算，不等同於從首次打卡到現在的日曆天數。
 - 打卡日期依裝置當地時間產生；跨時區行為未另行定義。
