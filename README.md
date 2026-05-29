@@ -21,23 +21,14 @@ Alive Please 是一個以 Android 製作的報平安 App。
 
 <img src="./screenshots/home.png" alt="Home" width="320" />
 
-## Play Store 發佈
+## 使用提醒
 
-Play Console 上架請使用 Android App Bundle：
+Alive Please 會在你的裝置本機保存打卡紀錄、提醒設定與親友 Email。
+若你啟用親友通知，App 會在太久未打卡時，透過設定的寄信服務送出通知 Email。
 
-```powershell
-./gradlew.bat :app:bundleRelease
-```
+請確認親友 Email 與通知內容是你願意提供給寄信服務處理的資訊。
 
-產物會在 `app/build/outputs/bundle/release/app-release.aab`。
+## 專案狀態
 
-Release 簽章資訊請放在不會進 Git 的 `local.properties`：
-
-```properties
-RELEASE_STORE_FILE=C:\\path\\to\\aliveplease-upload.jks
-RELEASE_STORE_PASSWORD=your-store-password
-RELEASE_KEY_ALIAS=your-key-alias
-RELEASE_KEY_PASSWORD=your-key-password
-```
-
-未設定上述欄位時仍可產出測試用 AAB，但檔案不會有上傳 Play Console 所需的 release 簽章。
+這是一個公開的 Android 專案，主要用來展示 Alive Please 的功能、介面與實作方式。
+詳細規格可參考 `docs/SPEC.md`。
