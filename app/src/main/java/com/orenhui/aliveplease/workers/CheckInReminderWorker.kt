@@ -14,6 +14,11 @@ class CheckInReminderWorker(
 
     override fun doWork(): Result {
         val dataStore = AppDataStore(applicationContext)
+        if (!dataStore.shouldSendCheckInReminder()) {
+            WorkSchedulerHelper.scheduleCheckInReminder(applicationContext)
+            return Result.success()
+        }
+
         if (WorkSchedulerHelper.isInQuietHours(dataStore)) {
             val quietEndMillis = WorkSchedulerHelper.nextQuietHoursEndMillis(dataStore)
             WorkSchedulerHelper.scheduleDeferredCheckInReminder(applicationContext, quietEndMillis)

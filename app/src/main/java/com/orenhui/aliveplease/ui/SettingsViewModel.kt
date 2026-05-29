@@ -34,14 +34,16 @@ data class SettingsUiState(
 
 class SettingsViewModel(
     private val appContext: Context,
-    private val dataStore: AppDataStore
+    private val dataStore: AppDataStore,
+    initialTutorialMode: Boolean = false,
+    initialTutorialStartIndex: Int = 0
 ) : ViewModel() {
 
     var uiState by mutableStateOf(SettingsUiState())
         private set
 
     init {
-        reloadState(false)
+        reloadState(initialTutorialMode, initialTutorialStartIndex)
     }
 
     fun reloadState(tutorialMode: Boolean, tutorialStartIndex: Int = 0) {
@@ -301,7 +303,11 @@ class SettingsViewModel(
         private const val MAX_DECIMAL_INTERVAL_HOURS = 240f
         private const val MAX_DECIMAL_DIGITS = 2
 
-        fun factory(context: Context): ViewModelProvider.Factory {
+        fun factory(
+            context: Context,
+            initialTutorialMode: Boolean = false,
+            initialTutorialStartIndex: Int = 0
+        ): ViewModelProvider.Factory {
             val appContext = context.applicationContext
             return object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -309,7 +315,9 @@ class SettingsViewModel(
                         @Suppress("UNCHECKED_CAST")
                         return SettingsViewModel(
                             appContext,
-                            AppDataStore(appContext)
+                            AppDataStore(appContext),
+                            initialTutorialMode,
+                            initialTutorialStartIndex
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

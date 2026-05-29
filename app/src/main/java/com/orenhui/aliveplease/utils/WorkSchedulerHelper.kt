@@ -3,9 +3,11 @@ package com.orenhui.aliveplease.utils
 import android.content.Context
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.orenhui.aliveplease.data.AppDataStore
 import com.orenhui.aliveplease.workers.CareNotificationWorker
@@ -18,6 +20,7 @@ import kotlin.random.Random
 
 object WorkSchedulerHelper {
 
+    private const val CHECK_IN_WORK_NAME = "check_in_reminder"
     private const val CARE_WORK_NAME = "care_notification"
     private const val FAMILY_WORK_NAME = "family_notification_check"
     private const val FAMILY_WARNING_WORK_NAME = "family_warning_notification"
@@ -27,6 +30,8 @@ object WorkSchedulerHelper {
 
     fun rescheduleAll(context: Context) {
         val dataStore = AppDataStore(context)
+
+        scheduleCheckInReminder(context)
 
         if (dataStore.isCareNotificationOn()) {
             scheduleNextCareNotification(context)
@@ -39,6 +44,29 @@ object WorkSchedulerHelper {
         } else {
             cancelFamilyNotification(context)
         }
+    }
+
+    fun scheduleCheckInReminder(context: Context) {
+        val dataStore = AppDataStore(context)
+        val request = PeriodicWorkRequestBuilder<CheckInReminderWorker>(
+            dataStore.getNotifyInterval(),
+            TimeUnit.HOURS
+        )
+            .setInitialDelay(dataStore.getTimeUntilCheckInReminder(), TimeUnit.MILLISECONDS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(false)
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            CHECK_IN_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+
+        cancelDeferredCheckInReminder(context)
     }
 
     fun scheduleFamilyNotification(context: Context, delayMillis: Long) {
@@ -145,6 +173,10 @@ object WorkSchedulerHelper {
             ExistingWorkPolicy.REPLACE,
             request
         )
+    }
+
+    fun cancelDeferredCheckInReminder(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(DEFERRED_CHECK_IN_WORK_NAME)
     }
 
     fun isInQuietHours(dataStore: AppDataStore, timeMillis: Long = System.currentTimeMillis()): Boolean {

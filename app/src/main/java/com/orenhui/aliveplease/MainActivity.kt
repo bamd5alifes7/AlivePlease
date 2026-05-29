@@ -15,15 +15,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavHostController
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.orenhui.aliveplease.data.AppDataStore
 import com.orenhui.aliveplease.notifications.NotificationHelper
@@ -32,10 +33,8 @@ import com.orenhui.aliveplease.ui.MainScreen
 import com.orenhui.aliveplease.ui.OnboardingScreen
 import com.orenhui.aliveplease.ui.SettingsScreen
 import com.orenhui.aliveplease.ui.theme.AppColors
-import com.orenhui.aliveplease.workers.CheckInReminderWorker
 import com.orenhui.aliveplease.utils.WorkSchedulerHelper
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -87,22 +86,7 @@ class MainActivity : ComponentActivity() {
     private fun scheduleWorkers() {
         val workManager = WorkManager.getInstance(this)
 
-        val checkInRequest = PeriodicWorkRequestBuilder<CheckInReminderWorker>(
-            dataStore.getNotifyInterval(),
-            TimeUnit.HOURS
-        )
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiresBatteryNotLow(false)
-                    .build()
-            )
-            .build()
-
-        workManager.enqueueUniquePeriodicWork(
-            "check_in_reminder",
-            ExistingPeriodicWorkPolicy.UPDATE,
-            checkInRequest
-        )
+        WorkSchedulerHelper.scheduleCheckInReminder(this)
 
         workManager.cancelUniqueWork("care_notification")
 
@@ -132,7 +116,9 @@ fun AlivePleaseApp(
     onSettingsSaved: () -> Unit
 ) {
     val navController = rememberNavController()
-    val startDestination = if (dataStore.isFirstLaunch()) "onboarding" else "home"
+    val startDestination = remember(dataStore) {
+        if (dataStore.isFirstLaunch()) "onboarding" else "home"
+    }
 
     NavHost(
         navController = navController,
@@ -141,15 +127,15 @@ fun AlivePleaseApp(
         composable("onboarding") {
             OnboardingScreen(
                 onPrimaryAction = {
-                    dataStore.setFirstLaunchCompleted()
-                    navController.navigate("home") {
+                    dataStore.setSetupTutorialPending()
+                    navController.navigateOnce("settings_tutorial") {
                         popUpTo("onboarding") { inclusive = true }
                     }
-                    navController.navigate("settings_tutorial")
                 },
                 onSecondaryAction = {
                     dataStore.setFirstLaunchCompleted()
-                    navController.navigate("home") {
+                    dataStore.clearSetupTutorialPending()
+                    navController.navigateOnce("home") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                 }
@@ -157,27 +143,29 @@ fun AlivePleaseApp(
         }
 
         composable("home") {
+            SetupTutorialRedirect(dataStore, navController)
             HomePagerScreen(
                 initialPage = 0,
                 onSettingsSaved = onSettingsSaved,
                 onNavigateToLogs = {
-                    navController.navigate("logs")
+                    navController.navigateOnce("logs")
                 },
                 onReplayOnboarding = {
-                    navController.navigate("settings_tutorial")
+                    navController.navigateOnce("settings_tutorial")
                 }
             )
         }
 
         composable("main") {
+            SetupTutorialRedirect(dataStore, navController)
             HomePagerScreen(
                 initialPage = 0,
                 onSettingsSaved = onSettingsSaved,
                 onNavigateToLogs = {
-                    navController.navigate("logs")
+                    navController.navigateOnce("logs")
                 },
                 onReplayOnboarding = {
-                    navController.navigate("settings_tutorial")
+                    navController.navigateOnce("settings_tutorial")
                 }
             )
         }
@@ -187,32 +175,35 @@ fun AlivePleaseApp(
                 initialPage = 1,
                 onSettingsSaved = onSettingsSaved,
                 onNavigateToLogs = {
-                    navController.navigate("logs")
+                    navController.navigateOnce("logs")
                 },
                 onReplayOnboarding = {
-                    navController.navigate("settings_tutorial")
+                    navController.navigateOnce("settings_tutorial")
                 }
             )
         }
 
         composable("settings_tutorial") {
+            LaunchedEffect(Unit) {
+                dataStore.setFirstLaunchCompleted()
+                dataStore.clearSetupTutorialPending()
+            }
             SettingsScreen(
                 onNavigateBack = {
-                    navController.popBackStack()
+                    navController.popBackStackOrHome()
                 },
                 onSettingsSaved = onSettingsSaved,
                 onNavigateToLogs = {
-                    navController.navigate("logs")
+                    navController.navigateOnce("logs")
                 },
                 onReplayOnboarding = {},
                 onTutorialFinished = {
-                    navController.navigate("settings") {
+                    navController.navigateOnce("settings") {
                         popUpTo("settings")
-                        launchSingleTop = true
                     }
                 },
                 onTutorialShowHome = {
-                    navController.navigate("main_tutorial")
+                    navController.navigateOnce("main_tutorial")
                 },
                 tutorialDisplayTotalSteps = 5,
                 tutorialMode = true
@@ -222,21 +213,20 @@ fun AlivePleaseApp(
         composable("settings_tutorial_preferences") {
             SettingsScreen(
                 onNavigateBack = {
-                    navController.popBackStack()
+                    navController.popBackStackOrHome()
                 },
                 onSettingsSaved = onSettingsSaved,
                 onNavigateToLogs = {
-                    navController.navigate("logs")
+                    navController.navigateOnce("logs")
                 },
                 onReplayOnboarding = {},
                 onTutorialFinished = {
-                    navController.navigate("settings") {
+                    navController.navigateOnce("settings") {
                         popUpTo("settings")
-                        launchSingleTop = true
                     }
                 },
                 onTutorialShowHome = {
-                    navController.navigate("main_tutorial")
+                    navController.navigateOnce("main_tutorial")
                 },
                 tutorialStartIndex = 2,
                 tutorialDisplayTotalSteps = 5,
@@ -247,21 +237,20 @@ fun AlivePleaseApp(
         composable("settings_tutorial_finish") {
             SettingsScreen(
                 onNavigateBack = {
-                    navController.popBackStack()
+                    navController.popBackStackOrHome()
                 },
                 onSettingsSaved = onSettingsSaved,
                 onNavigateToLogs = {
-                    navController.navigate("logs")
+                    navController.navigateOnce("logs")
                 },
                 onReplayOnboarding = {},
                 onTutorialFinished = {
-                    navController.navigate("settings") {
+                    navController.navigateOnce("settings") {
                         popUpTo("settings")
-                        launchSingleTop = true
                     }
                 },
                 onTutorialShowHome = {
-                    navController.navigate("main_tutorial") {
+                    navController.navigateOnce("main_tutorial") {
                         popUpTo("settings_tutorial_finish") { inclusive = true }
                     }
                 },
@@ -277,19 +266,18 @@ fun AlivePleaseApp(
                 onNavigateToSettings = {},
                 tutorialMode = true,
                 onTutorialNext = {
-                    navController.navigate("settings_tutorial_finish") {
+                    navController.navigateOnce("settings_tutorial_finish") {
                         popUpTo("main_tutorial") { inclusive = true }
                     }
                 },
                 onTutorialBack = {
-                    navController.navigate("settings_tutorial_preferences") {
+                    navController.navigateOnce("settings_tutorial_preferences") {
                         popUpTo("main_tutorial") { inclusive = true }
                     }
                 },
                 onTutorialClose = {
-                    navController.navigate("settings") {
+                    navController.navigateOnce("settings") {
                         popUpTo("settings")
-                        launchSingleTop = true
                     }
                 }
             )
@@ -303,6 +291,35 @@ fun AlivePleaseApp(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun SetupTutorialRedirect(
+    dataStore: AppDataStore,
+    navController: NavHostController
+) {
+    LaunchedEffect(Unit) {
+        if (dataStore.consumeSetupTutorialPending()) {
+            navController.navigateOnce("settings_tutorial")
+        }
+    }
+}
+
+private fun NavHostController.navigateOnce(
+    route: String,
+    builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    if (currentDestination?.route == route) return
+    navigate(route) {
+        launchSingleTop = true
+        builder()
+    }
+}
+
+private fun NavHostController.popBackStackOrHome() {
+    if (!popBackStack()) {
+        navigateOnce("home")
     }
 }
 

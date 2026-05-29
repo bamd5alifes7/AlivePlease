@@ -67,6 +67,48 @@ class AppDataStoreTest {
     }
 
     @Test
+    fun setFirstLaunchCompleted_persistsCompletedStateImmediately() {
+        assertTrue(dataStore.isFirstLaunch())
+
+        dataStore.setFirstLaunchCompleted()
+
+        assertFalse(dataStore.isFirstLaunch())
+    }
+
+    @Test
+    fun consumeSetupTutorialPending_returnsTrueOnce() {
+        assertFalse(dataStore.consumeSetupTutorialPending())
+
+        dataStore.setSetupTutorialPending()
+
+        assertTrue(dataStore.consumeSetupTutorialPending())
+        assertFalse(dataStore.consumeSetupTutorialPending())
+    }
+
+    @Test
+    fun shouldSendCheckInReminder_isTrueBeforeAnyCheckIn() {
+        assertTrue(dataStore.shouldSendCheckInReminder())
+    }
+
+    @Test
+    fun shouldSendCheckInReminder_isFalseUntilNotifyIntervalPasses() {
+        dataStore.setNotifyInterval(12)
+        dataStore.setLastCheckInTime(System.currentTimeMillis() - (30 * 60 * 1000L))
+
+        assertFalse(dataStore.shouldSendCheckInReminder())
+        assertTrue(dataStore.getTimeUntilCheckInReminder() in (11 * 60 * 60 * 1000L)..(12 * 60 * 60 * 1000L))
+    }
+
+    @Test
+    fun shouldSendCheckInReminder_isTrueAfterNotifyIntervalPasses() {
+        dataStore.setNotifyInterval(1)
+        dataStore.setLastCheckInTime(System.currentTimeMillis() - (61 * 60 * 1000L))
+
+        assertTrue(dataStore.shouldSendCheckInReminder())
+        assertEquals(0L, dataStore.getTimeUntilCheckInReminder())
+    }
+
+    @Test
     fun getTimeUntilFamilyWarning_returnsNotificationDelayMinusWarningWindow() {
         val now = System.currentTimeMillis()
         dataStore.setLastCheckInTime(now)

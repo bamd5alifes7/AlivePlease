@@ -95,7 +95,11 @@ fun SettingsScreen(
     tutorialMode: Boolean = false
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(context))
+    val viewModelKey = "settings-$tutorialMode-$tutorialStartIndex"
+    val viewModel: SettingsViewModel = viewModel(
+        key = viewModelKey,
+        factory = SettingsViewModel.factory(context, tutorialMode, tutorialStartIndex)
+    )
     val uiState = viewModel.uiState
     val density = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current

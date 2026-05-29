@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class AppDataStore(private val context: Context) {
 
@@ -32,6 +33,7 @@ class AppDataStore(private val context: Context) {
         private const val KEY_QUIET_HOURS_END_MINUTES = "quiet_hours_end_minutes"
         private const val KEY_EXECUTION_LOGS = "execution_logs"
         private const val KEY_IS_FIRST_LAUNCH = "is_first_launch"
+        private const val KEY_SETUP_TUTORIAL_PENDING = "setup_tutorial_pending"
         private const val KEY_USER_NAME = "user_name"
 
         private const val DEFAULT_NOTIFY_INTERVAL = 12L
@@ -69,6 +71,7 @@ class AppDataStore(private val context: Context) {
         }
 
         WorkSchedulerHelper.scheduleFamilyNotification(context, getTimeUntilFamilyNotification())
+        WorkSchedulerHelper.scheduleCheckInReminder(context)
         return isNewDay
     }
 
@@ -232,7 +235,34 @@ class AppDataStore(private val context: Context) {
     fun isFirstLaunch(): Boolean = prefs.getBoolean(KEY_IS_FIRST_LAUNCH, true)
 
     fun setFirstLaunchCompleted() {
-        prefs.edit().putBoolean(KEY_IS_FIRST_LAUNCH, false).apply()
+        prefs.edit().putBoolean(KEY_IS_FIRST_LAUNCH, false).commit()
+    }
+
+    fun setSetupTutorialPending() {
+        prefs.edit().putBoolean(KEY_SETUP_TUTORIAL_PENDING, true).commit()
+    }
+
+    fun clearSetupTutorialPending() {
+        prefs.edit().putBoolean(KEY_SETUP_TUTORIAL_PENDING, false).apply()
+    }
+
+    fun consumeSetupTutorialPending(): Boolean {
+        if (!prefs.getBoolean(KEY_SETUP_TUTORIAL_PENDING, false)) return false
+        clearSetupTutorialPending()
+        return true
+    }
+
+    fun getTimeUntilCheckInReminder(): Long {
+        val lastCheckIn = getLastCheckInTime()
+        if (lastCheckIn == 0L) return 0L
+
+        val elapsed = System.currentTimeMillis() - lastCheckIn
+        val remaining = TimeUnit.HOURS.toMillis(getNotifyInterval()) - elapsed
+        return if (remaining > 0) remaining else 0L
+    }
+
+    fun shouldSendCheckInReminder(): Boolean {
+        return getTimeUntilCheckInReminder() <= 0L
     }
 
     fun getTimeUntilFamilyNotification(): Long {
