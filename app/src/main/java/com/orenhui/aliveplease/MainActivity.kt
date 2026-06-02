@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -336,6 +337,12 @@ private fun HomePagerScreen(
         pageCount = { 2 }
     )
     val scope = rememberCoroutineScope()
+
+    BackHandler(enabled = pagerState.currentPage == 1) {
+        scope.launch {
+            pagerState.animateScrollToPage(0)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         HorizontalPager(

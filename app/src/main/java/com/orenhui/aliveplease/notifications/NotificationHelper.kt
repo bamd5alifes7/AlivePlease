@@ -125,6 +125,24 @@ object NotificationHelper {
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setOnlyAlertOnce(true)
+            .setAutoCancel(true)
+            .setContentIntent(createMainActivityPendingIntent(context))
+            .build()
+
+        notifySafely(context, NOTIFICATION_ID_FAMILY_STATUS, notification)
+    }
+
+    fun sendFamilyDeadlineAlert(context: Context) {
+        val message = context.getString(R.string.notification_family_deadline_message)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_FAMILY_WARNING)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setContentTitle(context.getString(R.string.notification_family_deadline_title))
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOnlyAlertOnce(true)
             .setAutoCancel(true)
             .setContentIntent(createMainActivityPendingIntent(context))
             .build()

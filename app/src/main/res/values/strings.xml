@@ -166,6 +166,9 @@
     <string name="notification_family_warning_title">要不要先回來打個卡？</string>
     <string name="notification_family_warning_message">再過約 %1$s，如果還沒有新的打卡，Alive Please 就會幫你通知親友。</string>
 
+    <string name="notification_family_deadline_title">親友通知時間到了</string>
+    <string name="notification_family_deadline_message">正在通知親友。如果你沒事，請記得和他們報個平安。</string>
+
     <string name="time_format_days">%1$d 天</string>
     <string name="time_format_hours">%1$d 小時</string>
     <string name="time_format_minutes">%1$d 分鐘</string>

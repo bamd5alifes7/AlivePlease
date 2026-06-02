@@ -1,6 +1,10 @@
 package com.orenhui.aliveplease.utils
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -10,6 +14,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.orenhui.aliveplease.data.AppDataStore
+import com.orenhui.aliveplease.notifications.FamilyDeadlineAlarmReceiver
 import com.orenhui.aliveplease.workers.CareNotificationWorker
 import com.orenhui.aliveplease.workers.CheckInReminderWorker
 import com.orenhui.aliveplease.workers.FamilyNotificationWorker
@@ -25,6 +30,7 @@ object WorkSchedulerHelper {
     private const val FAMILY_WORK_NAME = "family_notification_check"
     private const val FAMILY_WARNING_WORK_NAME = "family_warning_notification"
     private const val DEFERRED_CHECK_IN_WORK_NAME = "check_in_reminder_deferred"
+    private const val FAMILY_DEADLINE_ALARM_REQUEST_CODE = 2001
     private const val MIN_CARE_DELAY_MILLIS = 4L * 60L * 60L * 1000L
     private const val MAX_CARE_DELAY_MILLIS = 8L * 60L * 60L * 1000L
 
@@ -72,30 +78,22 @@ object WorkSchedulerHelper {
     fun scheduleFamilyNotification(context: Context, delayMillis: Long) {
         val dataStore = AppDataStore(context)
         val safeDelay = if (delayMillis > 0) delayMillis else 1000L
-        val request = OneTimeWorkRequestBuilder<FamilyNotificationWorker>()
-            .setInitialDelay(safeDelay, TimeUnit.MILLISECONDS)
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-            )
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            FAMILY_WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
-            request
-        )
+        enqueueFamilyNotificationWorker(context, safeDelay)
 
         dataStore.addExecutionLog("已安排家人通知檢查，約 ${safeDelay / 1000} 秒後由系統背景執行。")
+        scheduleFamilyDeadlineAlarm(context, safeDelay)
         scheduleFamilyWarningNotification(context)
     }
 
     fun cancelFamilyNotification(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(FAMILY_WORK_NAME)
+        cancelFamilyDeadlineAlarm(context)
         cancelFamilyWarningNotification(context)
         AppDataStore(context).addExecutionLog("已取消家人通知檢查。")
+    }
+
+    fun enqueueFamilyNotificationNow(context: Context) {
+        enqueueFamilyNotificationWorker(context, 0L)
     }
 
     fun scheduleFamilyWarningNotification(context: Context) {
@@ -220,5 +218,64 @@ object WorkSchedulerHelper {
     private fun minutesOfDay(timeMillis: Long): Int {
         val calendar = Calendar.getInstance().apply { this.timeInMillis = timeMillis }
         return calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+    }
+
+    private fun enqueueFamilyNotificationWorker(context: Context, delayMillis: Long) {
+        val builder = OneTimeWorkRequestBuilder<FamilyNotificationWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+
+        if (delayMillis > 0) {
+            builder.setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+        }
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            FAMILY_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            builder.build()
+        )
+    }
+
+    private fun scheduleFamilyDeadlineAlarm(context: Context, delayMillis: Long) {
+        val triggerAtMillis = System.currentTimeMillis() + delayMillis
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pendingIntent = createFamilyDeadlineAlarmPendingIntent(context)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        } else {
+            alarmManager.set(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        }
+
+        AppDataStore(context).addExecutionLog("已排程本機親友通知鬧鐘，約 ${delayMillis / 1000} 秒後觸發。")
+    }
+
+    private fun cancelFamilyDeadlineAlarm(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.cancel(createFamilyDeadlineAlarmPendingIntent(context))
+    }
+
+    private fun createFamilyDeadlineAlarmPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, FamilyDeadlineAlarmReceiver::class.java).apply {
+            action = FamilyDeadlineAlarmReceiver.ACTION_FAMILY_DEADLINE_ALARM
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            FAMILY_DEADLINE_ALARM_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
     }
 }
