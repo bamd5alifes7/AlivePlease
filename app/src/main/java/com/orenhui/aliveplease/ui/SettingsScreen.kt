@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -65,12 +67,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -102,6 +106,7 @@ fun SettingsScreen(
     )
     val uiState = viewModel.uiState
     val density = LocalDensity.current
+    val focusManager = LocalFocusManager.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -277,6 +282,11 @@ fun SettingsScreen(
                     )
                 )
                 .padding(paddingValues)
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        focusManager.clearFocus()
+                    }
+                }
         ) {
             Column(
                 modifier = Modifier
@@ -288,7 +298,7 @@ fun SettingsScreen(
                 SettingsHeroCard(
                     tutorialMode = tutorialMode,
                     careNotificationEnabled = uiState.careNotificationEnabled,
-                    familyEmail = uiState.familyEmail,
+                    familyContactCount = uiState.familyContacts.count { it.email.isNotBlank() },
                     gasWebhookUrl = uiState.gasWebhookUrl,
                     notificationsEnabled = notificationsEnabled,
                     onOpenNotificationSettings = {
@@ -331,48 +341,35 @@ fun SettingsScreen(
                     highlighted = tutorialHighlighted(TutorialKey.RecipientTitle),
                     eyebrow = stringResource(R.string.family_notification_section),
                     icon = "稱",
-                    title = stringResource(R.string.recipient_title_label)
+                    title = stringResource(R.string.family_contacts_title)
                 ) {
-                    OutlinedTextField(
-                        value = uiState.familyRecipientTitle,
-                        onValueChange = viewModel::onFamilyRecipientTitleChanged,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.recipient_title_label_hint)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                        singleLine = true,
-                        enabled = !tutorialMode,
-                        supportingText = {
-                            Text(
-                                text = stringResource(R.string.recipient_title_supporting),
-                                color = AppColors.TextSecondary
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        uiState.familyContacts.forEachIndexed { index, contact ->
+                            FamilyContactEditor(
+                                index = index,
+                                contact = contact,
+                                showRemove = uiState.familyContacts.size > 1,
+                                tutorialMode = tutorialMode,
+                                emailError = uiState.emailError,
+                                fieldColors = fieldColors,
+                                onTitleChanged = { viewModel.onFamilyContactTitleChanged(index, it) },
+                                onEmailChanged = { viewModel.onFamilyContactEmailChanged(index, it) },
+                                onRemove = { viewModel.removeFamilyContact(index) }
                             )
-                        },
-                        colors = fieldColors
-                    )
-                }
+                        }
 
-                SettingSection(
-                    modifier = tutorialSectionModifier(TutorialKey.FamilyEmail),
-                    highlighted = tutorialHighlighted(TutorialKey.FamilyEmail),
-                    eyebrow = stringResource(R.string.family_notification_section),
-                    icon = "@",
-                    title = stringResource(R.string.family_email)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.familyEmail,
-                        onValueChange = viewModel::onFamilyEmailChanged,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.family_email_label)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        singleLine = true,
-                        isError = uiState.emailError,
-                        enabled = !tutorialMode,
-                        colors = fieldColors
-                    )
+                        OutlinedButton(
+                            onClick = viewModel::addFamilyContact,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !tutorialMode
+                        ) {
+                            Text(stringResource(R.string.add_family_contact))
+                        }
+                    }
 
                     if (uiState.emailError) {
                         Text(
-                            text = stringResource(R.string.invalid_email),
+                            text = stringResource(R.string.invalid_family_contact),
                             color = AppColors.Error,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(start = 4.dp, top = 4.dp)
@@ -857,7 +854,7 @@ fun SettingsScreen(
 private fun SettingsHeroCard(
     tutorialMode: Boolean,
     careNotificationEnabled: Boolean,
-    familyEmail: String,
+    familyContactCount: Int,
     gasWebhookUrl: String,
     notificationsEnabled: Boolean,
     onOpenNotificationSettings: () -> Unit
@@ -928,11 +925,12 @@ private fun SettingsHeroCard(
                     StatusChip(
                         modifier = Modifier.weight(1f),
                         label = stringResource(R.string.status_family_notification),
-                        value = stringResource(
-                            if (familyEmail.isBlank()) R.string.status_not_configured
-                            else R.string.status_configured
-                        ),
-                        accent = if (familyEmail.isBlank()) AppColors.AccentAmber else AppColors.PrimaryGreen
+                        value = if (familyContactCount == 0) {
+                            stringResource(R.string.status_not_configured)
+                        } else {
+                            stringResource(R.string.status_family_contact_count, familyContactCount)
+                        },
+                        accent = if (familyContactCount == 0) AppColors.AccentAmber else AppColors.PrimaryGreen
                     )
                 }
 
@@ -1013,6 +1011,80 @@ private fun StatusChip(
                 fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+@Composable
+private fun FamilyContactEditor(
+    index: Int,
+    contact: FamilyContactUiState,
+    showRemove: Boolean,
+    tutorialMode: Boolean,
+    emailError: Boolean,
+    fieldColors: TextFieldColors,
+    onTitleChanged: (String) -> Unit,
+    onEmailChanged: (String) -> Unit,
+    onRemove: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(AppColors.SurfaceDark.copy(alpha = 0.74f))
+            .border(
+                1.dp,
+                AppColors.TextHint.copy(alpha = 0.24f),
+                RoundedCornerShape(14.dp)
+            )
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.family_contact_item_title, index + 1),
+                color = AppColors.TextSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+            if (showRemove) {
+                TextButton(
+                    onClick = onRemove,
+                    enabled = !tutorialMode
+                ) {
+                    Text(
+                        text = stringResource(R.string.remove_family_contact),
+                        color = AppColors.TextHint
+                    )
+                }
+            }
+        }
+
+        OutlinedTextField(
+            value = contact.recipientTitle,
+            onValueChange = onTitleChanged,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.recipient_title_label_hint)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            singleLine = true,
+            isError = emailError && contact.email.isNotBlank() && contact.recipientTitle.isBlank(),
+            enabled = !tutorialMode,
+            colors = fieldColors
+        )
+        OutlinedTextField(
+            value = contact.email,
+            onValueChange = onEmailChanged,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.family_email_label)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            singleLine = true,
+            isError = emailError && (contact.recipientTitle.isNotBlank() || contact.email.isNotBlank()),
+            enabled = !tutorialMode,
+            colors = fieldColors
+        )
     }
 }
 

@@ -55,6 +55,29 @@ class AppDataStoreTest {
     }
 
     @Test
+    fun getFamilyContacts_fallsBackToLegacyRecipientSettings() {
+        dataStore.setFamilyRecipientTitle("媽媽")
+        dataStore.setFamilyEmail("mom@example.com")
+
+        val contacts = dataStore.getFamilyContacts()
+
+        assertEquals(listOf(FamilyContact("媽媽", "mom@example.com")), contacts)
+    }
+
+    @Test
+    fun setFamilyContacts_persistsMultipleRecipients() {
+        val contacts = listOf(
+            FamilyContact("媽媽", "mom@example.com"),
+            FamilyContact("哥哥", "brother@example.com")
+        )
+
+        dataStore.setFamilyContacts(contacts)
+
+        assertEquals(contacts, dataStore.getFamilyContacts())
+        assertTrue(dataStore.hasFamilyNotificationRecipient())
+    }
+
+    @Test
     fun quietHours_defaultsToEnabledFrom2300To0700() {
         assertTrue(dataStore.isQuietHoursEnabled())
         assertEquals(23 * 60, dataStore.getQuietHoursStartMinutes())

@@ -63,7 +63,7 @@ class MainViewModel(
         if (showCelebration) {
             celebrationJob?.cancel()
             celebrationJob = viewModelScope.launch {
-                delay(6000)
+                delay(CELEBRATION_DURATION_MILLIS)
                 uiState = uiState.copy(showCelebration = false)
             }
         }
@@ -132,7 +132,8 @@ class MainViewModel(
     }
 
     companion object {
-        private const val CHECK_IN_FEEDBACK_DURATION_MILLIS = 4_000L
+        private const val CHECK_IN_FEEDBACK_DURATION_MILLIS = 5_000L
+        private const val CELEBRATION_DURATION_MILLIS = 10_000L
 
         fun factory(context: Context): ViewModelProvider.Factory {
             val appContext = context.applicationContext

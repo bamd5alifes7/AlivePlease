@@ -30,6 +30,7 @@
     <string name="hours">小時</string>
     <string name="email_hint">請輸入收件人的 Email</string>
     <string name="invalid_email">Email 格式看起來不正確</string>
+    <string name="invalid_family_contact">請確認每位通知對象都有稱呼，且 Email 格式正確。</string>
     <string name="webhook_title">Email 寄送設定</string>
     <string name="webhook_hint">貼上可用的 Webhook URL</string>
     <string name="send_test_email">寄送測試 Email</string>
@@ -66,6 +67,10 @@
     <string name="family_warning_before_description">需小於親友通知時間，可小數二位。</string>
     <string name="family_warning_before_error">需 0.01 起，且小於親友通知。</string>
     <string name="family_email_label">要通知的 Email</string>
+    <string name="family_contacts_title">通知對象</string>
+    <string name="family_contact_item_title">通知對象 %1$d</string>
+    <string name="add_family_contact">新增通知對象</string>
+    <string name="remove_family_contact">移除</string>
     <string name="recipient_title_label">收件人稱呼</string>
     <string name="recipient_title_label_hint">例如：媽媽、哥哥、寶貝</string>
     <string name="recipient_title_supporting">這會出現在信件開頭。</string>
@@ -77,6 +82,8 @@
     <string name="missing_family_email">先填入想通知的 Email，我才知道要寄給誰。</string>
     <string name="sending_test_email">正在幫你寄測試 Email…</string>
     <string name="test_email_sent">測試 Email 已送出，等一下可以確認信箱。</string>
+    <string name="test_email_sent_multiple">測試 Email 已送出給 %1$d 位通知對象。</string>
+    <string name="test_email_partial_failed">測試 Email 已送出 %1$d/%2$d 位，請檢查失敗的 Email 或寄信設定。</string>
     <string name="test_email_failed_short">測試 Email 暫時沒有送出去，我們再檢查一下設定。</string>
     <string name="care_toggle_title">開啟關懷提醒</string>
     <string name="care_toggle_description">會在 4 ~ 8 小時之間隨機推送一點關心給您；當然，也會遵守您對夜間安靜時段的設定。</string>
@@ -98,6 +105,7 @@
     <string name="status_disabled">已關閉</string>
     <string name="status_not_configured">未完成</string>
     <string name="status_configured">已設定</string>
+    <string name="status_family_contact_count">%1$d 位</string>
     <string name="status_default_value">預設</string>
     <string name="status_custom_value">自訂</string>
     <string name="reminder_group_title">提醒類型</string>
@@ -160,9 +168,9 @@
     <string name="notification_checkin_message_with_blessing">回來報個平安吧。再 %1$d 天，就會收到下一段連續打卡祝福。</string>
     <string name="notification_care_title">留一點時間給自己</string>
     <string name="notification_family_status_success_title">消息已經幫你送到了</string>
-    <string name="notification_family_status_success_message">剛剛已順利寄信到 %1$s。至少這一刻，有人會知道該多留意你一下。</string>
+    <string name="notification_family_status_success_message">剛剛已順利寄信給 %1$s。至少這一刻，有人會知道該多留意你一下。</string>
     <string name="notification_family_status_failure_title">這封通知暫時沒送出去</string>
-    <string name="notification_family_status_failure_message">剛剛想寄信到 %1$s，但沒有成功。可以打開 App 看看設定或執行紀錄，我們再試一次。</string>
+    <string name="notification_family_status_failure_message">剛剛想寄信給 %1$s，但沒有成功。可以打開 App 看看設定或執行紀錄，我們再試一次。</string>
     <string name="notification_family_warning_title">要不要先回來打個卡？</string>
     <string name="notification_family_warning_message">再過約 %1$s，如果還沒有新的打卡，Alive Please 就會幫你通知親友。</string>
 

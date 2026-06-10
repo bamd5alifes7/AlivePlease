@@ -3,11 +3,18 @@ package com.orenhui.aliveplease.data
 import android.content.Context
 import android.content.SharedPreferences
 import com.orenhui.aliveplease.utils.WorkSchedulerHelper
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
+data class FamilyContact(
+    val recipientTitle: String,
+    val email: String
+)
 
 class AppDataStore(private val context: Context) {
 
@@ -25,6 +32,7 @@ class AppDataStore(private val context: Context) {
         private const val KEY_FAMILY_NOTIFY_INTERVAL_FLOAT = "family_notify_interval_float"
         private const val KEY_FAMILY_WARNING_BEFORE_HOURS = "family_warning_before_hours"
         private const val KEY_FAMILY_EMAIL = "family_email"
+        private const val KEY_FAMILY_CONTACTS_JSON = "family_contacts_json"
         private const val KEY_FAMILY_RECIPIENT_TITLE = "family_recipient_title"
         private const val KEY_GAS_WEBHOOK_URL = "gas_webhook_url"
         private const val KEY_CARE_NOTIFICATION_ON = "care_notification_on"
@@ -169,9 +177,56 @@ class AppDataStore(private val context: Context) {
         prefs.edit().putString(KEY_FAMILY_EMAIL, email.trim()).apply()
     }
 
+    fun getFamilyContacts(): List<FamilyContact> {
+        val storedContacts = parseFamilyContacts(
+            prefs.getString(KEY_FAMILY_CONTACTS_JSON, "").orEmpty()
+        )
+        if (storedContacts.isNotEmpty()) return storedContacts
+
+        val legacyEmail = getFamilyEmail().trim()
+        if (legacyEmail.isBlank()) return emptyList()
+
+        return listOf(
+            FamilyContact(
+                recipientTitle = getFamilyRecipientTitle(),
+                email = legacyEmail
+            )
+        )
+    }
+
+    fun setFamilyContacts(contacts: List<FamilyContact>) {
+        val normalizedContacts = contacts.mapNotNull { contact ->
+            val email = contact.email.trim()
+            if (email.isBlank()) {
+                null
+            } else {
+                FamilyContact(
+                    recipientTitle = contact.recipientTitle.trim().ifBlank { DEFAULT_RECIPIENT_TITLE },
+                    email = email
+                )
+            }
+        }
+        val json = JSONArray().apply {
+            normalizedContacts.forEach { contact ->
+                put(
+                    JSONObject()
+                        .put("recipientTitle", contact.recipientTitle)
+                        .put("email", contact.email)
+                )
+            }
+        }.toString()
+        val firstContact = normalizedContacts.firstOrNull()
+
+        prefs.edit()
+            .putString(KEY_FAMILY_CONTACTS_JSON, json)
+            .putString(KEY_FAMILY_EMAIL, firstContact?.email.orEmpty())
+            .putString(KEY_FAMILY_RECIPIENT_TITLE, firstContact?.recipientTitle.orEmpty())
+            .apply()
+    }
+
     fun hasCheckedIn(): Boolean = getLastCheckInTime() > 0L
 
-    fun hasFamilyNotificationRecipient(): Boolean = getFamilyEmail().isNotBlank()
+    fun hasFamilyNotificationRecipient(): Boolean = getFamilyContacts().isNotEmpty()
 
     fun shouldScheduleFamilyNotification(): Boolean =
         hasCheckedIn() && hasFamilyNotificationRecipient()
@@ -183,6 +238,23 @@ class AppDataStore(private val context: Context) {
 
     fun setFamilyRecipientTitle(title: String) {
         prefs.edit().putString(KEY_FAMILY_RECIPIENT_TITLE, title.trim()).apply()
+    }
+
+    private fun parseFamilyContacts(rawJson: String): List<FamilyContact> {
+        if (rawJson.isBlank()) return emptyList()
+        return runCatching {
+            val array = JSONArray(rawJson)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val item = array.optJSONObject(index) ?: continue
+                    val email = item.optString("email").trim()
+                    if (email.isBlank()) continue
+                    val recipientTitle = item.optString("recipientTitle").trim()
+                        .ifBlank { DEFAULT_RECIPIENT_TITLE }
+                    add(FamilyContact(recipientTitle, email))
+                }
+            }
+        }.getOrDefault(emptyList())
     }
 
     fun getStoredGasWebhookUrl(): String =

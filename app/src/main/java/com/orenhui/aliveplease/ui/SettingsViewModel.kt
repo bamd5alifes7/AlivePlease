@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.orenhui.aliveplease.R
 import com.orenhui.aliveplease.data.AppDataStore
+import com.orenhui.aliveplease.data.FamilyContact
 import com.orenhui.aliveplease.utils.EmailContentBuilder
 import com.orenhui.aliveplease.utils.TimeFormatter
 import com.orenhui.aliveplease.utils.WebhookHelper
@@ -17,8 +18,7 @@ data class SettingsUiState(
     val checkInInterval: String = "",
     val familyInterval: String = "",
     val familyWarningBefore: String = "",
-    val familyEmail: String = "",
-    val familyRecipientTitle: String = "",
+    val familyContacts: List<FamilyContactUiState> = listOf(FamilyContactUiState()),
     val gasWebhookUrl: String = "",
     val careNotificationEnabled: Boolean = false,
     val quietHoursEnabled: Boolean = true,
@@ -30,6 +30,11 @@ data class SettingsUiState(
     val familyWarningError: Boolean = false,
     val quietHoursError: Boolean = false,
     val tutorialStepIndex: Int = -1
+)
+
+data class FamilyContactUiState(
+    val recipientTitle: String = "",
+    val email: String = ""
 )
 
 class SettingsViewModel(
@@ -53,8 +58,9 @@ class SettingsViewModel(
             checkInInterval = dataStore.getNotifyInterval().toString(),
             familyInterval = if (current % 1 == 0f) current.toInt().toString() else current.toString(),
             familyWarningBefore = formatHours(dataStore.getFamilyWarningBeforeHours()),
-            familyEmail = dataStore.getFamilyEmail(),
-            familyRecipientTitle = dataStore.getFamilyRecipientTitle(),
+            familyContacts = dataStore.getFamilyContacts()
+                .map { FamilyContactUiState(it.recipientTitle, it.email) }
+                .ifEmpty { listOf(FamilyContactUiState()) },
             gasWebhookUrl = dataStore.getStoredGasWebhookUrl(),
             careNotificationEnabled = dataStore.isCareNotificationOn(),
             quietHoursEnabled = dataStore.isQuietHoursEnabled(),
@@ -90,12 +96,29 @@ class SettingsViewModel(
         )
     }
 
-    fun onFamilyEmailChanged(value: String) {
-        uiState = uiState.copy(familyEmail = value, emailError = false)
+    fun onFamilyContactTitleChanged(index: Int, value: String) {
+        updateFamilyContact(index) { it.copy(recipientTitle = value) }
     }
 
-    fun onFamilyRecipientTitleChanged(value: String) {
-        uiState = uiState.copy(familyRecipientTitle = value)
+    fun onFamilyContactEmailChanged(index: Int, value: String) {
+        updateFamilyContact(index) { it.copy(email = value) }
+    }
+
+    fun addFamilyContact() {
+        uiState = uiState.copy(
+            familyContacts = uiState.familyContacts + FamilyContactUiState(),
+            emailError = false
+        )
+    }
+
+    fun removeFamilyContact(index: Int) {
+        val contacts = uiState.familyContacts.toMutableList()
+        if (index !in contacts.indices) return
+        contacts.removeAt(index)
+        uiState = uiState.copy(
+            familyContacts = contacts.ifEmpty { mutableListOf(FamilyContactUiState()) },
+            emailError = false
+        )
     }
 
     fun onGasWebhookUrlChanged(value: String) {
@@ -140,9 +163,7 @@ class SettingsViewModel(
             state.checkInInterval.trim() != dataStore.getNotifyInterval().toString() ||
             state.familyInterval.trim() != formatHours(dataStore.getFamilyNotifyIntervalFloat()) ||
             state.familyWarningBefore.trim() != formatHours(dataStore.getFamilyWarningBeforeHours()) ||
-            state.familyEmail.trim() != dataStore.getFamilyEmail() ||
-            state.familyRecipientTitle.trim().ifBlank { dataStore.getFamilyRecipientTitle() } !=
-            dataStore.getFamilyRecipientTitle() ||
+            normalizedFamilyContacts(state.familyContacts) != dataStore.getFamilyContacts() ||
             state.gasWebhookUrl.trim() != dataStore.getStoredGasWebhookUrl() ||
             state.careNotificationEnabled != dataStore.isCareNotificationOn() ||
             state.quietHoursEnabled != dataStore.isQuietHoursEnabled() ||
@@ -152,50 +173,57 @@ class SettingsViewModel(
 
     suspend fun sendTestEmail(): String {
         val state = uiState
-        if (state.familyEmail.isBlank()) {
-            return appContext.getString(R.string.missing_family_email)
-        }
-        if (!TimeFormatter.isValidEmail(state.familyEmail)) {
+        val contacts = validateFamilyContactsOrNull(state.familyContacts)
+        if (contacts == null) {
             uiState = uiState.copy(emailError = true)
-            return appContext.getString(R.string.invalid_email)
+            return appContext.getString(R.string.invalid_family_contact)
+        }
+        if (contacts.isEmpty()) {
+            return appContext.getString(R.string.missing_family_email)
         }
 
         val safeUserName = state.userName.trim().ifBlank { dataStore.getUserName() }
-        val safeRecipientTitle = state.familyRecipientTitle.trim()
-            .ifBlank { dataStore.getFamilyRecipientTitle() }
         val resolvedWebhookUrl = state.gasWebhookUrl.trim().ifBlank { dataStore.getGasWebhookUrl() }
         val intervalValue = state.familyInterval.toFloatOrNull()
             ?.takeIf { it >= MIN_DECIMAL_INTERVAL_HOURS && it <= MAX_DECIMAL_INTERVAL_HOURS }
             ?: dataStore.getFamilyNotifyIntervalFloat()
 
-        val subject = EmailContentBuilder.buildSubject(
-            recipientTitle = safeRecipientTitle,
-            userName = safeUserName,
-            isTest = true
-        )
-        val body = EmailContentBuilder.buildBody(
-            recipientTitle = safeRecipientTitle,
-            userName = safeUserName,
-            intervalHours = intervalValue,
-            isTest = true
-        )
+        val results = contacts.map { contact ->
+            val subject = EmailContentBuilder.buildSubject(
+                recipientTitle = contact.recipientTitle,
+                userName = safeUserName,
+                isTest = true
+            )
+            val body = EmailContentBuilder.buildBody(
+                recipientTitle = contact.recipientTitle,
+                userName = safeUserName,
+                intervalHours = intervalValue,
+                isTest = true
+            )
 
-        val result = WebhookHelper.sendEmail(
-            webhookUrl = resolvedWebhookUrl,
-            to = state.familyEmail,
-            subject = subject,
-            body = body
-        )
-        return if (result.success) {
-            appContext.getString(R.string.test_email_sent)
+            WebhookHelper.sendEmail(
+                webhookUrl = resolvedWebhookUrl,
+                to = contact.email,
+                subject = subject,
+                body = body
+            )
+        }
+        val successCount = results.count { it.success }
+        return if (successCount == contacts.size) {
+            if (contacts.size == 1) {
+                appContext.getString(R.string.test_email_sent)
+            } else {
+                appContext.getString(R.string.test_email_sent_multiple, successCount)
+            }
         } else {
-            result.message ?: appContext.getString(R.string.test_email_failed_short)
+            appContext.getString(R.string.test_email_partial_failed, successCount, contacts.size)
         }
     }
 
     fun saveSettings(): Boolean {
         val state = uiState
-        if (state.familyEmail.isNotBlank() && !TimeFormatter.isValidEmail(state.familyEmail)) {
+        val familyContacts = validateFamilyContactsOrNull(state.familyContacts)
+        if (familyContacts == null) {
             uiState = uiState.copy(emailError = true)
             return false
         }
@@ -233,8 +261,7 @@ class SettingsViewModel(
         dataStore.setNotifyInterval(checkInIntervalValue)
         dataStore.setFamilyNotifyIntervalFloat(familyIntervalValue)
         dataStore.setFamilyWarningBeforeHours(familyWarningBeforeValue)
-        dataStore.setFamilyEmail(state.familyEmail)
-        dataStore.setFamilyRecipientTitle(state.familyRecipientTitle)
+        dataStore.setFamilyContacts(familyContacts)
         dataStore.setGasWebhookUrl(state.gasWebhookUrl)
         dataStore.setCareNotificationOn(state.careNotificationEnabled)
         dataStore.setQuietHoursEnabled(state.quietHoursEnabled)
@@ -242,6 +269,34 @@ class SettingsViewModel(
         dataStore.setQuietHoursEndMinutes(quietEndMinutes)
 
         return true
+    }
+
+    private fun updateFamilyContact(index: Int, transform: (FamilyContactUiState) -> FamilyContactUiState) {
+        val contacts = uiState.familyContacts.toMutableList()
+        if (index !in contacts.indices) return
+        contacts[index] = transform(contacts[index])
+        uiState = uiState.copy(familyContacts = contacts, emailError = false)
+    }
+
+    private fun validateFamilyContactsOrNull(contacts: List<FamilyContactUiState>): List<FamilyContact>? {
+        val normalized = mutableListOf<FamilyContact>()
+        contacts.forEach { contact ->
+            val title = contact.recipientTitle.trim()
+            val email = contact.email.trim()
+            if (title.isBlank() && email.isBlank()) return@forEach
+            if (title.isBlank() || email.isBlank() || !TimeFormatter.isValidEmail(email)) return null
+            normalized.add(
+                FamilyContact(
+                    recipientTitle = title,
+                    email = email
+                )
+            )
+        }
+        return normalized
+    }
+
+    private fun normalizedFamilyContacts(contacts: List<FamilyContactUiState>): List<FamilyContact> {
+        return validateFamilyContactsOrNull(contacts).orEmpty()
     }
 
     private fun parseTimeToMinutes(value: String): Int? {
