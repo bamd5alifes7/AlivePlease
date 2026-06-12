@@ -1,6 +1,7 @@
 package com.orenhui.aliveplease.ui
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -23,7 +24,13 @@ data class MainUiState(
     val careMessage: String = "",
     val showCheckInFeedback: Boolean = false,
     val celebrationMessage: String = "",
-    val showCelebration: Boolean = false
+    val showCelebration: Boolean = false,
+    val rapidCheckInEasterEgg: RapidCheckInEasterEgg? = null
+)
+
+data class RapidCheckInEasterEgg(
+    val title: String,
+    val message: String
 )
 
 class MainViewModel(
@@ -37,6 +44,7 @@ class MainViewModel(
     private var feedbackJob: Job? = null
     private var celebrationJob: Job? = null
     private var careMessageJob: Job? = null
+    private val rapidCheckInTracker = RapidCheckInTracker()
 
     init {
         startCountdownUpdates()
@@ -47,11 +55,19 @@ class MainViewModel(
         val isNewDay = dataStore.performCheckIn()
         val streakDays = dataStore.getCurrentStreak()
         val showCelebration = isNewDay && streakDays > 0 && streakDays % 3 == 0
+        val rapidCheckInEasterEgg = uiState.rapidCheckInEasterEgg ?: run {
+            if (rapidCheckInTracker.record(SystemClock.elapsedRealtime())) {
+                randomRapidCheckInEasterEgg()
+            } else {
+                null
+            }
+        }
 
         uiState = buildUiState(randomCareMessage()).copy(
             showCheckInFeedback = true,
             celebrationMessage = if (showCelebration) getCelebrationMessage(streakDays) else "",
-            showCelebration = showCelebration
+            showCelebration = showCelebration,
+            rapidCheckInEasterEgg = rapidCheckInEasterEgg
         )
 
         feedbackJob?.cancel()
@@ -71,6 +87,10 @@ class MainViewModel(
 
     fun refreshCareMessage() {
         uiState = uiState.copy(careMessage = randomCareMessage(excluding = uiState.careMessage))
+    }
+
+    fun dismissRapidCheckInEasterEgg() {
+        uiState = uiState.copy(rapidCheckInEasterEgg = null)
     }
 
     private fun startCountdownUpdates() {
@@ -129,6 +149,21 @@ class MainViewModel(
             9 -> appContext.getString(R.string.celebration_message_9)
             else -> appContext.getString(R.string.celebration_message_default, streakDays)
         }
+    }
+
+    private fun randomRapidCheckInEasterEgg(): RapidCheckInEasterEgg {
+        val messageIds = listOf(
+            R.string.rapid_check_in_easter_egg_title_1 to R.string.rapid_check_in_easter_egg_message_1,
+            R.string.rapid_check_in_easter_egg_title_2 to R.string.rapid_check_in_easter_egg_message_2,
+            R.string.rapid_check_in_easter_egg_title_3 to R.string.rapid_check_in_easter_egg_message_3,
+            R.string.rapid_check_in_easter_egg_title_4 to R.string.rapid_check_in_easter_egg_message_4,
+            R.string.rapid_check_in_easter_egg_title_5 to R.string.rapid_check_in_easter_egg_message_5
+        )
+        val (titleId, messageId) = messageIds.random()
+        return RapidCheckInEasterEgg(
+            title = appContext.getString(titleId),
+            message = appContext.getString(messageId)
+        )
     }
 
     companion object {

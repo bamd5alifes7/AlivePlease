@@ -1,5 +1,6 @@
 package com.orenhui.aliveplease.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInOutSine
 import androidx.compose.animation.core.RepeatMode
@@ -69,6 +70,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.orenhui.aliveplease.R
 import com.orenhui.aliveplease.ui.theme.AppColors
@@ -82,13 +85,16 @@ fun MainScreen(
     tutorialMode: Boolean = false,
     onTutorialNext: () -> Unit = {},
     onTutorialBack: () -> Unit = {},
-    onTutorialClose: () -> Unit = {}
+    onTutorialClose: () -> Unit = {},
+    exitFarewellEnabled: Boolean = false,
+    onExitApp: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: MainViewModel = viewModel(factory = MainViewModel.factory(context))
     val uiState = viewModel.uiState
     var buttonPressed by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var farewellMessage by remember { mutableStateOf<String?>(null) }
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
         onRefresh = {
@@ -134,6 +140,21 @@ fun MainScreen(
         if (isRefreshing) {
             delay(450)
             isRefreshing = false
+        }
+    }
+
+    BackHandler(enabled = exitFarewellEnabled) {
+        if (farewellMessage == null) {
+            farewellMessage = context.resources.getStringArray(R.array.exit_farewell_messages).random()
+        } else {
+            onExitApp()
+        }
+    }
+
+    LaunchedEffect(farewellMessage) {
+        if (farewellMessage != null) {
+            delay(EXIT_FAREWELL_DURATION_MILLIS)
+            onExitApp()
         }
     }
 
@@ -413,6 +434,206 @@ fun MainScreen(
             }
         }
     }
+
+    uiState.rapidCheckInEasterEgg?.let { easterEgg ->
+        RapidCheckInEasterEggDialog(
+            easterEgg = easterEgg,
+            onDismissRequest = viewModel::dismissRapidCheckInEasterEgg,
+            onContinue = viewModel::dismissRapidCheckInEasterEgg
+        )
+    }
+
+    farewellMessage?.let { message ->
+        FarewellDialog(
+            message = message,
+            onDismissRequest = onExitApp
+        )
+    }
+}
+
+@Composable
+private fun FarewellDialog(
+    message: String,
+    onDismissRequest: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 340.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(AppColors.SurfaceMid, AppColors.SurfaceDark)
+                    )
+                )
+                .border(
+                    1.dp,
+                    AppColors.PrimaryGreen.copy(alpha = 0.4f),
+                    RoundedCornerShape(20.dp)
+                )
+                .padding(horizontal = 26.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                tint = AppColors.PrimaryGreen,
+                modifier = Modifier.size(32.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = message,
+                color = AppColors.TextPrimary,
+                fontSize = 18.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = stringResource(R.string.exit_farewell_hint),
+                color = AppColors.TextHint,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun RapidCheckInEasterEggDialog(
+    easterEgg: RapidCheckInEasterEgg,
+    onDismissRequest: () -> Unit,
+    onContinue: () -> Unit
+) {
+    var allowOutsideDismiss by remember(easterEgg) { mutableStateOf(false) }
+
+    LaunchedEffect(easterEgg) {
+        delay(RAPID_CHECK_IN_OUTSIDE_DISMISS_DELAY_MILLIS)
+        allowOutsideDismiss = true
+    }
+
+    Dialog(
+        onDismissRequest = {
+            if (allowOutsideDismiss) {
+                onDismissRequest()
+            }
+        },
+        properties = DialogProperties(dismissOnBackPress = false)
+    ) {
+        BackHandler(onBack = onDismissRequest)
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 380.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(AppColors.SurfaceLight, AppColors.SurfaceDark)
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            AppColors.AccentAmber.copy(alpha = 0.8f),
+                            AppColors.PrimaryGreen.copy(alpha = 0.6f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.AccentAmberGlow)
+                    .border(1.dp, AppColors.AccentAmber.copy(alpha = 0.55f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = AppColors.AccentAmber,
+                    modifier = Modifier.size(38.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = AppColors.PrimaryGreen.copy(alpha = 0.14f),
+                modifier = Modifier.border(
+                    1.dp,
+                    AppColors.PrimaryGreen.copy(alpha = 0.4f),
+                    RoundedCornerShape(50)
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.rapid_check_in_easter_egg_badge),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    color = AppColors.PrimaryGreen,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = easterEgg.title,
+                color = AppColors.TextPrimary,
+                fontSize = 23.sp,
+                lineHeight = 30.sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = easterEgg.message,
+                color = AppColors.TextSecondary,
+                fontSize = 15.sp,
+                lineHeight = 23.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = stringResource(R.string.rapid_check_in_easter_egg_footer),
+                color = AppColors.TextHint,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            Button(
+                onClick = onContinue,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.PrimaryGreen)
+            ) {
+                Text(
+                    text = stringResource(R.string.rapid_check_in_easter_egg_continue),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -624,3 +845,6 @@ fun GlassCard(
         content()
     }
 }
+
+private const val EXIT_FAREWELL_DURATION_MILLIS = 1_500L
+private const val RAPID_CHECK_IN_OUTSIDE_DISMISS_DELAY_MILLIS = 500L

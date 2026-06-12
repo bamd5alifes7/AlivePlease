@@ -144,7 +144,7 @@
     <string name="tutorial_required">必要</string>
     <string name="tutorial_optional">可選</string>
     <string name="main_heart_emoji">❤️</string>
-    <string name="check_in_success_with_emoji">🎉 已經幫你紀錄今天的報平安</string>
+    <string name="check_in_success_with_emoji">🎉 已經紀錄你的報平安</string>
     <string name="countdown_emoji">⏳</string>
     <string name="streak_days_label">連續打卡天數</string>
     <string name="streak_days_summary">%1$d 天</string>
@@ -154,6 +154,27 @@
     <string name="celebration_message_6">6 天連續打卡，代表你一直在努力照顧自己。</string>
     <string name="celebration_message_9">9 天了，你正在慢慢把平安這件事變成習慣。</string>
     <string name="celebration_message_default">連續 %1$d 天都沒有中斷，請把這份穩定也好好誇獎自己。</string>
+    <string name="rapid_check_in_easter_egg_badge">隱藏成就 · 連續十次報平安</string>
+    <string name="rapid_check_in_easter_egg_title_1">收到你的平安訊號</string>
+    <string name="rapid_check_in_easter_egg_message_1">感謝世界和平，感謝你依然存在。</string>
+    <string name="rapid_check_in_easter_egg_title_2">今天很有精神</string>
+    <string name="rapid_check_in_easter_egg_message_2">看來你不只平安，還帶著很充足的活力。</string>
+    <string name="rapid_check_in_easter_egg_title_3">收到收到，我們有收到</string>
+    <string name="rapid_check_in_easter_egg_message_3">Alive Please 有好好收下你的每一次報到。</string>
+    <string name="rapid_check_in_easter_egg_title_4">第十次報到完成</string>
+    <string name="rapid_check_in_easter_egg_message_4">謝謝你這麼認真地打卡，更謝謝你願意照顧自己的情緒。</string>
+    <string name="rapid_check_in_easter_egg_title_5">平安訊號很清楚</string>
+    <string name="rapid_check_in_easter_egg_message_5">這份充滿活力的問候，我們就收下了。</string>
+    <string name="rapid_check_in_easter_egg_footer">重複打卡不會增加天數，但這個小成就會記得你來過。</string>
+    <string name="rapid_check_in_easter_egg_continue">繼續使用</string>
+    <string-array name="exit_farewell_messages">
+        <item>下次見，記得好好照顧自己。</item>
+        <item>期待再次收到你的平安。</item>
+        <item>今天也辛苦了，我們下次見。</item>
+        <item>有空再回來報個平安。</item>
+        <item>願你離開 App 後，也一切安好。</item>
+    </string-array>
+    <string name="exit_farewell_hint">即將離開 Alive Please</string>
 
     <string name="notification_channel_checkin_name">打卡提醒</string>
     <string name="notification_channel_checkin_desc">溫柔提醒你回來報個平安。</string>

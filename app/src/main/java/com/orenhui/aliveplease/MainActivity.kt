@@ -1,6 +1,7 @@
 package com.orenhui.aliveplease
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
@@ -332,6 +334,7 @@ private fun HomePagerScreen(
     onNavigateToLogs: () -> Unit,
     onReplayOnboarding: () -> Unit
 ) {
+    val activity = LocalContext.current as? Activity
     val pagerState = rememberPagerState(
         initialPage = initialPage,
         pageCount = { 2 }
@@ -355,7 +358,9 @@ private fun HomePagerScreen(
                         scope.launch {
                             pagerState.animateScrollToPage(1)
                         }
-                    }
+                    },
+                    exitFarewellEnabled = pagerState.currentPage == 0,
+                    onExitApp = { activity?.finish() }
                 )
                 1 -> SettingsScreen(
                     onNavigateBack = {
