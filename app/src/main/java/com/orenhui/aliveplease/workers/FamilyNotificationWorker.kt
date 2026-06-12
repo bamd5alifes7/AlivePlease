@@ -20,7 +20,8 @@ class FamilyNotificationWorker(
             return Result.success()
         }
 
-        val contacts = dataStore.getFamilyContacts()
+        val notificationCycleId = dataStore.getFamilyNotificationCycleId()
+        val contacts = dataStore.getPendingFamilyNotificationContacts()
         val webhookUrl = dataStore.getGasWebhookUrl()
         if (contacts.isEmpty() || webhookUrl.isBlank()) {
             dataStore.addExecutionLog("親友通知取消：收件人 Email 或寄信服務尚未設定。")
@@ -29,10 +30,13 @@ class FamilyNotificationWorker(
 
         val userName = dataStore.getUserName()
         val intervalHours = dataStore.getFamilyNotifyIntervalFloat()
-        val successfulEmails = mutableListOf<String>()
         val failedMessages = mutableListOf<String>()
 
         contacts.forEach { contact ->
+            if (!dataStore.isCurrentFamilyNotificationCycle(notificationCycleId)) {
+                return Result.success()
+            }
+
             val subject = EmailContentBuilder.buildSubject(contact.recipientTitle, userName)
             val body = EmailContentBuilder.buildBody(contact.recipientTitle, userName, intervalHours)
 
@@ -42,11 +46,12 @@ class FamilyNotificationWorker(
                 webhookUrl = webhookUrl,
                 to = contact.email,
                 subject = subject,
-                body = body
+                body = body,
+                requestId = dataStore.getFamilyNotificationRequestId(notificationCycleId, contact.email)
             )
 
             if (result.success) {
-                successfulEmails.add(contact.email)
+                dataStore.markFamilyNotificationSent(notificationCycleId, contact.email)
                 dataStore.addExecutionLog("親友通知已寄出：${contact.email}")
             } else {
                 failedMessages.add(result.message ?: "未知錯誤")
@@ -54,23 +59,30 @@ class FamilyNotificationWorker(
             }
         }
 
-        return if (successfulEmails.size == contacts.size) {
+        if (!dataStore.isCurrentFamilyNotificationCycle(notificationCycleId)) {
+            return Result.success()
+        }
+
+        val remainingContacts = dataStore.getPendingFamilyNotificationContacts()
+        val allContacts = dataStore.getFamilyContacts()
+
+        return if (remainingContacts.isEmpty()) {
             NotificationHelper.sendFamilyNotificationStatus(
                 applicationContext,
                 true,
-                formatRecipientSummary(successfulEmails)
+                formatRecipientSummary(allContacts.map { it.email })
             )
             Result.success()
         } else {
             val message = failedMessages.firstOrNull() ?: "未知錯誤"
             dataStore.addExecutionLog("親友通知部分或全部寄送失敗：$message")
-            if (successfulEmails.isEmpty() && runAttemptCount < MAX_RETRY_ATTEMPTS) {
+            if (runAttemptCount < MAX_RETRY_ATTEMPTS) {
                 return Result.retry()
             }
             NotificationHelper.sendFamilyNotificationStatus(
                 applicationContext,
                 false,
-                "${successfulEmails.size}/${contacts.size} 位親友"
+                "${allContacts.size - remainingContacts.size}/${allContacts.size} 位親友"
             )
             Result.success()
         }

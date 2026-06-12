@@ -20,7 +20,8 @@ object WebhookHelper {
         webhookUrl: String,
         to: String,
         subject: String,
-        body: String
+        body: String,
+        requestId: String? = null
     ): EmailSendResult {
         if (webhookUrl.isBlank() || to.isBlank()) {
             return EmailSendResult(
@@ -36,6 +37,11 @@ object WebhookHelper {
                     .put("to", to)
                     .put("subject", subject)
                     .put("body", body)
+                    .apply {
+                        if (!requestId.isNullOrBlank()) {
+                            put("requestId", requestId)
+                        }
+                    }
                     .toString()
 
                 val request = Request.Builder()

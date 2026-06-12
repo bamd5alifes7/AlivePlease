@@ -34,6 +34,8 @@ class AppDataStore(private val context: Context) {
         private const val KEY_FAMILY_EMAIL = "family_email"
         private const val KEY_FAMILY_CONTACTS_JSON = "family_contacts_json"
         private const val KEY_FAMILY_RECIPIENT_TITLE = "family_recipient_title"
+        private const val KEY_FAMILY_NOTIFICATION_SENT_CYCLE = "family_notification_sent_cycle"
+        private const val KEY_FAMILY_NOTIFICATION_SENT_EMAILS = "family_notification_sent_emails"
         private const val KEY_GAS_WEBHOOK_URL = "gas_webhook_url"
         private const val KEY_CARE_NOTIFICATION_ON = "care_notification_on"
         private const val KEY_QUIET_HOURS_ENABLED = "quiet_hours_enabled"
@@ -50,11 +52,12 @@ class AppDataStore(private val context: Context) {
         private const val DEFAULT_QUIET_HOURS_START_MINUTES = 23 * 60
         private const val DEFAULT_QUIET_HOURS_END_MINUTES = 7 * 60
         private const val DEFAULT_GAS_WEBHOOK_URL =
-            "https://script.google.com/macros/s/AKfycbyYVX3a8BrAozR3UMfjrgiYmHaKePvgCw6BkULBIPav5bYbF4Ij8abvl-BXp2eOJBTC/exec"
+            "https://script.google.com/macros/s/AKfycbw8WwBC-5p2bws0y7uN4-sMSGJPc0zSM6a9pS_of0JcFS-wCwmRDpsSfukaXsrcjaHa/exec"
         private const val DEFAULT_USER_NAME = "我"
         private const val DEFAULT_RECIPIENT_TITLE = "親愛的家人"
 
         private const val DATE_PATTERN = "yyyy-MM-dd"
+        private val FAMILY_NOTIFICATION_STATE_LOCK = Any()
     }
 
     fun getLastCheckInTime(): Long = prefs.getLong(KEY_LAST_CHECK_IN_TIME, 0L)
@@ -67,7 +70,11 @@ class AppDataStore(private val context: Context) {
         val now = System.currentTimeMillis()
         val today = getTodayDateString()
 
-        setLastCheckInTime(now)
+        prefs.edit()
+            .putLong(KEY_LAST_CHECK_IN_TIME, now)
+            .putLong(KEY_FAMILY_NOTIFICATION_SENT_CYCLE, now)
+            .remove(KEY_FAMILY_NOTIFICATION_SENT_EMAILS)
+            .apply()
 
         val checkInDates = getCheckInDates().toMutableSet()
         val isNewDay = today !in checkInDates
@@ -229,7 +236,43 @@ class AppDataStore(private val context: Context) {
     fun hasFamilyNotificationRecipient(): Boolean = getFamilyContacts().isNotEmpty()
 
     fun shouldScheduleFamilyNotification(): Boolean =
-        hasCheckedIn() && hasFamilyNotificationRecipient()
+        hasCheckedIn() && getPendingFamilyNotificationContacts().isNotEmpty()
+
+    fun getPendingFamilyNotificationContacts(): List<FamilyContact> {
+        val sentEmails = getSentFamilyNotificationEmails()
+        return getFamilyContacts().filterNot { it.email.lowercase(Locale.US) in sentEmails }
+    }
+
+    fun getFamilyNotificationCycleId(): Long = getLastCheckInTime()
+
+    fun isCurrentFamilyNotificationCycle(cycleId: Long): Boolean =
+        cycleId > 0L && getLastCheckInTime() == cycleId
+
+    fun markFamilyNotificationSent(cycleId: Long, email: String): Boolean {
+        synchronized(FAMILY_NOTIFICATION_STATE_LOCK) {
+            if (!isCurrentFamilyNotificationCycle(cycleId)) return false
+
+            val sentEmails = getSentFamilyNotificationEmails().toMutableSet()
+            sentEmails.add(email.trim().lowercase(Locale.US))
+            return prefs.edit()
+                .putLong(KEY_FAMILY_NOTIFICATION_SENT_CYCLE, cycleId)
+                .putStringSet(KEY_FAMILY_NOTIFICATION_SENT_EMAILS, sentEmails)
+                .commit()
+        }
+    }
+
+    fun getFamilyNotificationRequestId(cycleId: Long, email: String): String =
+        "$cycleId:${email.trim().lowercase(Locale.US)}"
+
+    private fun getSentFamilyNotificationEmails(): Set<String> {
+        val currentCycleId = getLastCheckInTime()
+        val sentCycleId = prefs.getLong(KEY_FAMILY_NOTIFICATION_SENT_CYCLE, 0L)
+        if (currentCycleId <= 0L || sentCycleId != currentCycleId) return emptySet()
+
+        return prefs.getStringSet(KEY_FAMILY_NOTIFICATION_SENT_EMAILS, emptySet())
+            .orEmpty()
+            .mapTo(mutableSetOf()) { it.lowercase(Locale.US) }
+    }
 
     fun getFamilyRecipientTitle(): String {
         val title = prefs.getString(KEY_FAMILY_RECIPIENT_TITLE, DEFAULT_RECIPIENT_TITLE).orEmpty().trim()

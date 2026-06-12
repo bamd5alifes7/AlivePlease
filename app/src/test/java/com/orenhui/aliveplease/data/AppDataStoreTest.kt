@@ -55,6 +55,84 @@ class AppDataStoreTest {
     }
 
     @Test
+    fun successfulRecipient_isNotScheduledAgainDuringSameCheckInCycle() {
+        dataStore.setFamilyEmail("family@example.com")
+        dataStore.performCheckIn()
+
+        dataStore.markFamilyNotificationSent(
+            dataStore.getFamilyNotificationCycleId(),
+            "family@example.com"
+        )
+        val reopenedDataStore = AppDataStore(
+            ApplicationProvider.getApplicationContext<android.content.Context>()
+        )
+
+        assertFalse(reopenedDataStore.shouldScheduleFamilyNotification())
+        assertTrue(reopenedDataStore.getPendingFamilyNotificationContacts().isEmpty())
+    }
+
+    @Test
+    fun partialSuccess_onlyLeavesFailedRecipientsPending() {
+        dataStore.setFamilyContacts(
+            listOf(
+                FamilyContact("媽媽", "mom@example.com"),
+                FamilyContact("哥哥", "brother@example.com")
+            )
+        )
+        dataStore.performCheckIn()
+
+        dataStore.markFamilyNotificationSent(
+            dataStore.getFamilyNotificationCycleId(),
+            "mom@example.com"
+        )
+
+        assertEquals(
+            listOf(FamilyContact("哥哥", "brother@example.com")),
+            dataStore.getPendingFamilyNotificationContacts()
+        )
+    }
+
+    @Test
+    fun newCheckIn_startsNewFamilyNotificationCycle() {
+        dataStore.setFamilyEmail("family@example.com")
+        dataStore.performCheckIn()
+        dataStore.markFamilyNotificationSent(
+            dataStore.getFamilyNotificationCycleId(),
+            "family@example.com"
+        )
+
+        dataStore.performCheckIn()
+
+        assertTrue(dataStore.shouldScheduleFamilyNotification())
+        assertEquals(1, dataStore.getPendingFamilyNotificationContacts().size)
+    }
+
+    @Test
+    fun familyNotificationRequestId_isStableForSameCycleAndRecipient() {
+        dataStore.setFamilyEmail("family@example.com")
+        dataStore.performCheckIn()
+        val cycleId = dataStore.getFamilyNotificationCycleId()
+
+        val firstRequestId = dataStore.getFamilyNotificationRequestId(cycleId, "FAMILY@example.com")
+        val secondRequestId = dataStore.getFamilyNotificationRequestId(cycleId, "family@example.com")
+
+        assertEquals(firstRequestId, secondRequestId)
+    }
+
+    @Test
+    fun staleNotificationResult_doesNotMarkNewCheckInCycleAsSent() {
+        dataStore.setFamilyEmail("family@example.com")
+        dataStore.performCheckIn()
+        val oldCycleId = dataStore.getFamilyNotificationCycleId()
+        dataStore.setLastCheckInTime(oldCycleId + 1)
+
+        val marked = dataStore.markFamilyNotificationSent(oldCycleId, "family@example.com")
+
+        assertFalse(marked)
+        assertTrue(dataStore.shouldScheduleFamilyNotification())
+    }
+
+    @Test
     fun getFamilyContacts_fallsBackToLegacyRecipientSettings() {
         dataStore.setFamilyRecipientTitle("媽媽")
         dataStore.setFamilyEmail("mom@example.com")

@@ -162,6 +162,7 @@ App 建立 3 個通知 channel：
 
 - 使用者至少打卡過一次。
 - 家人 Email 不為空。
+- 目前打卡週期仍有尚未成功通知的收件人。
 
 排程方式：
 
@@ -180,7 +181,9 @@ App 建立 3 個通知 channel：
 寄送流程：
 
 - 使用 `EmailContentBuilder` 建立 subject 與 body。
-- 透過 `WebhookHelper.sendEmail()` POST 到 Webhook。
+- 透過 `WebhookHelper.sendEmail()` POST 到 Webhook，正式通知包含由打卡週期與收件人組成的 `requestId`。
+- 每位成功收件人會立即寫入目前打卡週期的本機成功紀錄。
+- 部分失敗時，重試只寄送尚未成功的收件人。
 - 成功時：
   - 寫入執行紀錄。
   - 發送本機成功狀態通知。
@@ -280,6 +283,7 @@ GAS 端會：
 - 限制 body 長度最大 20000。
 - 預設不允許 HTML；若 `ALLOW_HTML` 開啟，會同時設定 `htmlBody` 並產生純文字 fallback。
 - 使用 `MailApp.sendEmail()` 寄送。
+- 有 `requestId` 時，使用 Script Properties 與 Script Lock 避免相同請求重複寄信。
 - 回傳 JSON 成功或失敗資訊。
 
 ### 6.5 Usage log
@@ -292,6 +296,7 @@ GAS 端會：
 - `ok`
 - `http_method`
 - `recipient`
+- `request_id`
 - `subject_length`
 - `body_length`
 - `post_body_length`

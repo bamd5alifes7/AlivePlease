@@ -5,7 +5,8 @@
  * {
  *   "to": "family@example.com",
  *   "subject": "Alive Please check-in",
- *   "body": "message text"
+ *   "body": "message text",
+ *   "requestId": "optional-idempotency-key"
  * }
  *
  * Optional:
@@ -19,6 +20,8 @@ const CONFIG = {
   ALLOW_HTML: false,
   MAX_SUBJECT_LENGTH: 200,
   MAX_BODY_LENGTH: 20000,
+  MAX_REQUEST_ID_LENGTH: 300,
+  IDEMPOTENCY_RETENTION_DAYS: 180,
   DEBUG_MODE: true,
   USAGE_LOG_SHEET_ID: '1gnj6ful_6zIg5EKLdrPVGFyHq2u115HWedrDGw32mPY',
   USAGE_LOG_SHEET_NAME: 'usage_log',
@@ -62,27 +65,25 @@ function doPost(e) {
       mailOptions.htmlBody = normalized.body;
     }
 
-    MailApp.sendEmail(
-      normalized.to,
-      normalized.subject,
-      CONFIG.ALLOW_HTML ? stripHtml_(normalized.body) : normalized.body,
-      mailOptions
-    );
+    const duplicate = sendEmailOnce_(normalized, mailOptions);
+    const event = duplicate ? 'mail_duplicate_ignored' : 'mail_sent';
 
     console.log(
       JSON.stringify({
-        event: 'mail_sent',
+        event,
         to: normalized.to,
+        requestId: normalized.requestId,
         subjectLength: normalized.subject.length,
         bodyLength: normalized.body.length,
       })
     );
 
     logUsageSafe_({
-      event: 'mail_sent',
+      event,
       ok: true,
       httpMethod: 'POST',
       to: normalized.to,
+      requestId: normalized.requestId,
       subjectLength: normalized.subject.length,
       bodyLength: normalized.body.length,
       tokenProvided: Boolean(e && e.parameter && e.parameter.token),
@@ -91,7 +92,8 @@ function doPost(e) {
 
     return jsonOutput_({
       ok: true,
-      message: 'Email sent.',
+      message: duplicate ? 'Email already sent.' : 'Email sent.',
+      duplicate,
       to: normalized.to,
       time: new Date().toISOString(),
     });
@@ -170,6 +172,7 @@ function normalizePayload_(payload) {
   const to = sanitizeText_(payload.to);
   const subject = sanitizeText_(payload.subject);
   const body = sanitizeBody_(payload.body);
+  const requestId = sanitizeText_(payload.requestId);
 
   if (!to) {
     throw new Error('"to" is required.');
@@ -189,8 +192,64 @@ function normalizePayload_(payload) {
   if (body.length > CONFIG.MAX_BODY_LENGTH) {
     throw new Error('Body is too long.');
   }
+  if (requestId.length > CONFIG.MAX_REQUEST_ID_LENGTH) {
+    throw new Error('requestId is too long.');
+  }
 
-  return { to, subject, body };
+  return { to, subject, body, requestId };
+}
+
+function sendEmailOnce_(normalized, mailOptions) {
+  if (!normalized.requestId) {
+    sendEmail_(normalized, mailOptions);
+    return false;
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const properties = PropertiesService.getScriptProperties();
+    const propertyKey = idempotencyPropertyKey_(normalized.requestId);
+    if (properties.getProperty(propertyKey)) {
+      return true;
+    }
+
+    sendEmail_(normalized, mailOptions);
+    properties.setProperty(propertyKey, String(Date.now()));
+    cleanupIdempotencyProperties_(properties);
+    return false;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function sendEmail_(normalized, mailOptions) {
+  MailApp.sendEmail(
+    normalized.to,
+    normalized.subject,
+    CONFIG.ALLOW_HTML ? stripHtml_(normalized.body) : normalized.body,
+    mailOptions
+  );
+}
+
+function idempotencyPropertyKey_(requestId) {
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, requestId);
+  return 'sent_request_' + Utilities.base64EncodeWebSafe(digest).replace(/=+$/, '');
+}
+
+function cleanupIdempotencyProperties_(properties) {
+  const retentionMillis = CONFIG.IDEMPOTENCY_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const cutoff = Date.now() - retentionMillis;
+  const values = properties.getProperties();
+
+  Object.keys(values).forEach(function (key) {
+    if (key.indexOf('sent_request_') !== 0) {
+      return;
+    }
+    if (Number(values[key]) < cutoff) {
+      properties.deleteProperty(key);
+    }
+  });
 }
 
 function sanitizeText_(value) {
@@ -258,6 +317,7 @@ function logUsage_(entry) {
     payload.ok === false ? 'false' : 'true',
     payload.httpMethod || '',
     payload.to || '',
+    payload.requestId || '',
     payload.subjectLength || '',
     payload.bodyLength || '',
     payload.postBodyLength || '',
@@ -285,6 +345,7 @@ function ensureUsageLogHeader_(sheet) {
     'ok',
     'http_method',
     'recipient',
+    'request_id',
     'subject_length',
     'body_length',
     'post_body_length',
@@ -295,7 +356,12 @@ function ensureUsageLogHeader_(sheet) {
   ];
 
   if (sheet.getLastRow() > 0) {
-    return;
+    const currentHeaders = sheet
+      .getRange(1, 1, 1, sheet.getLastColumn())
+      .getValues()[0];
+    if (currentHeaders.indexOf('request_id') === -1) {
+      sheet.insertColumnAfter(6);
+    }
   }
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
