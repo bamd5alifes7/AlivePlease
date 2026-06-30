@@ -1,0 +1,55 @@
+{
+  "style": {
+    "brand": "Alive Please",
+    "font": "Microsoft JhengHei UI",
+    "latinFont": "Segoe UI",
+    "background": ["#061421", "#005c4e"],
+    "text": "#f4fbff",
+    "mutedText": "#d6edf0",
+    "accent": "#ffb830",
+    "green": "#00c896",
+    "phoneCanvas": { "width": 1080, "height": 1920 },
+    "tabletCanvas": { "width": 1920, "height": 1080 },
+    "phoneCopy": { "x": 82, "y": 110, "titleSize": 58, "subtitleSize": 29 },
+    "tabletCopy": { "x": 96, "y": 375, "titleSize": 72, "subtitleSize": 34 },
+    "phoneDevice": { "x": 121, "y": 310, "width": 838, "height": 1556, "radius": 38 },
+    "phoneScreen": { "x": 190, "y": 310, "width": 700, "height": 1556 },
+    "tabletDevice": { "x": 700, "y": 168, "width": 1135, "height": 744, "radius": 58 }
+  },
+  "slides": {
+    "home": {
+      "title": "一鍵報平安",
+      "subtitle": "每天按一下，記錄自己的平安狀態。",
+      "phoneSource": "Original/01.jpg",
+      "tabletSource": "Original/tablet_01.png",
+      "phoneOutput": "store-01-home.png",
+      "tabletOutput": "tablet-store-01.png"
+    },
+    "reminder": {
+      "title": "太久未打卡時",
+      "subtitle": "先提醒你，再通知信任的人。",
+      "phoneSource": "Original/02.jpg",
+      "tabletSource": "Original/tablet_02.png",
+      "phoneOutput": "store-02-reminder.png",
+      "tabletOutput": "tablet-store-02.png"
+    },
+    "settings": {
+      "title": "通知節奏自己決定",
+      "tabletTitle": "通知節奏\n自己決定",
+      "subtitle": "提醒時間、親友 Email、安靜時段都能調整。",
+      "phoneSource": "Original/03.jpg",
+      "tabletSource": "Original/tablet_03.png",
+      "phoneOutput": "store-03-settings.png",
+      "tabletOutput": "tablet-store-03.png"
+    },
+    "onboarding": {
+      "title": "第一次使用也清楚",
+      "tabletTitle": "第一次使用也\n清楚",
+      "subtitle": "跟著導覽完成重要設定。",
+      "phoneSource": "Original/04.jpg",
+      "tabletSource": "Original/tablet_04.png",
+      "phoneOutput": "store-04-onboarding.png",
+      "tabletOutput": "tablet-store-04.png"
+    }
+  }
+}

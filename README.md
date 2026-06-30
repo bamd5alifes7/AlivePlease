@@ -5,6 +5,11 @@ Alive Please 是一個以 Android 製作的報平安 App。
 它的核心目的很簡單：
 讓使用者每天按一下「我還活著」完成打卡，並在太久沒有報平安時，自動通知指定的親友。
 
+## 下載正式版
+
+使用者可以直接從 Google Play 商店下載正式版 App：
+[Alive Please on Google Play](https://play.google.com/store/apps/details?id=com.orenhui.aliveplease)
+
 ## 功能
 
 - 每日報平安打卡
