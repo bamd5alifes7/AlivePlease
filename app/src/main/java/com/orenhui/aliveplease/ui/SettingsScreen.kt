@@ -71,6 +71,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -687,6 +688,85 @@ fun SettingsScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.PrimaryGreen)
                     ) {
                         Text(stringResource(R.string.send_test_email), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                SettingGroupHeader(
+                    title = stringResource(R.string.personal_group_title),
+                    description = stringResource(R.string.personal_group_description)
+                )
+
+                SettingSection(
+                    eyebrow = stringResource(R.string.birthday_section),
+                    icon = "🎂",
+                    title = stringResource(R.string.birthday_setting_title)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = uiState.birthdayMonth,
+                            onValueChange = viewModel::onBirthdayMonthChanged,
+                            modifier = Modifier.weight(1f),
+                            label = { Text(stringResource(R.string.birthday_month_label)) },
+                            placeholder = { Text(stringResource(R.string.birthday_month_placeholder), color = AppColors.TextHint.copy(alpha = 0.5f)) },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Next
+                            ),
+                            singleLine = true,
+                            isError = uiState.birthdayError,
+                            enabled = !tutorialMode,
+                            colors = fieldColors
+                        )
+                        OutlinedTextField(
+                            value = uiState.birthdayDay,
+                            onValueChange = viewModel::onBirthdayDayChanged,
+                            modifier = Modifier.weight(1f),
+                            label = { Text(stringResource(R.string.birthday_day_label)) },
+                            placeholder = { Text(stringResource(R.string.birthday_day_placeholder), color = AppColors.TextHint.copy(alpha = 0.5f)) },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            singleLine = true,
+                            isError = uiState.birthdayError,
+                            enabled = !tutorialMode,
+                            colors = fieldColors
+                        )
+                    }
+
+                    if (uiState.birthdayError) {
+                        Text(
+                            text = stringResource(R.string.birthday_setting_error),
+                            color = AppColors.Error,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.birthday_setting_supporting),
+                            color = AppColors.TextHint,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                        )
+                    }
+
+                    if (uiState.birthdayMonth.isNotBlank() || uiState.birthdayDay.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = viewModel::clearBirthday,
+                            enabled = !tutorialMode
+                        ) {
+                            Text(
+                                text = stringResource(R.string.birthday_setting_clear),
+                                color = AppColors.TextHint,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
 

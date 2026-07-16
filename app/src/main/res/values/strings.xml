@@ -207,4 +207,47 @@
     <string name="time_format_days_hours_minutes_seconds">%1$d 天 %2$d 小時 %3$d 分鐘 %4$d 秒</string>
     <string name="time_format_hours_minutes_seconds">%1$d 小時 %2$d 分鐘 %3$d 秒</string>
     <string name="time_format_minutes_seconds">%1$d 分鐘 %2$d 秒</string>
+
+    <!-- 生日彩蛋：設定頁 -->
+    <string name="personal_group_title">個人化</string>
+    <string name="personal_group_description">加入選填資料，讓 App 更貼近你。</string>
+    <string name="birthday_section">生日設定</string>
+    <string name="birthday_setting_title">生日（選填）</string>
+    <string name="birthday_month_label">月份</string>
+    <string name="birthday_day_label">日期</string>
+    <string name="birthday_setting_supporting">只儲存在這台手機，生日當天會有一點小變化。</string>
+    <string name="birthday_setting_error">月份請填 1–12，日期請填 1–31，且需符合實際天數。</string>
+    <string name="birthday_setting_clear">清除生日</string>
+    <string name="birthday_month_placeholder">例如 7</string>
+    <string name="birthday_day_placeholder">例如 14</string>
+
+    <!-- 生日彩蛋：首頁邀請 -->
+    <string name="birthday_invitation_title">今天，為自己許願</string>
+    <string name="birthday_invitation_message">三根蟠燭，三個願望。</string>
+    <string name="birthday_invitation_open">開始許願 ✨</string>
+    <string name="birthday_invitation_later">晚點再許</string>
+
+    <!-- 生日彩蛋：彩蛋畫面 -->
+    <string name="birthday_easter_egg_title">🎉 生日快樂！</string>
+    <string name="birthday_wish_prompt_1">第一個願望，送給一路走到今天的自己。</string>
+    <string name="birthday_wish_prompt_2">第二個願望，留給此刻最需要被照顧的自己。</string>
+    <string name="birthday_wish_prompt_3">最後一個願望，送給未來想成為的自己。</string>
+    <string name="birthday_swipe_hint">在蛋糕上向左滑動，吹熄這根蠟燭</string>
+    <string name="birthday_blow_candle_button_1">吹熄第一根蠟燭 🌬️</string>
+    <string name="birthday_blow_candle_button_2">吹熄第二根蠟燭 🌬️</string>
+    <string name="birthday_blow_candle_button_3">吹熄最後一根蠟燭 🌬️</string>
+    <string name="birthday_close_button">關閉</string>
+    <string name="birthday_candle_blown_all">✨ 願望許好了！</string>
+    <string name="birthday_blessing_message">願你新的一歲，也能被世界溫柔對待。今天不用證明什麼，平安地活著就很好。生日快樂。</string>
+    <string name="birthday_return_button">帶著願望回去</string>
+
+    <string-array name="birthday_wishes">
+        <item>健康 ✨</item>
+        <item>快樂 🌟</item>
+        <item>平安 💚</item>
+        <item>愛與被愛 💛</item>
+        <item>勇敢 🔥</item>
+        <item>自由 🌈</item>
+        <item>富足 🌻</item>
+    </string-array>
 </resources>

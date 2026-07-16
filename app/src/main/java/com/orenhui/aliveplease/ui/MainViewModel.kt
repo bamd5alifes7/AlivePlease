@@ -10,10 +10,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.orenhui.aliveplease.R
 import com.orenhui.aliveplease.data.AppDataStore
+import com.orenhui.aliveplease.utils.BirthdayMatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class MainUiState(
     val aliveDays: Int = 0,
@@ -25,13 +29,23 @@ data class MainUiState(
     val showCheckInFeedback: Boolean = false,
     val celebrationMessage: String = "",
     val showCelebration: Boolean = false,
-    val rapidCheckInEasterEgg: RapidCheckInEasterEgg? = null
+    val rapidCheckInEasterEgg: RapidCheckInEasterEgg? = null,
+    // 生日彩蛋
+    val isBirthdayToday: Boolean = false,
+    val showBirthdayPrompt: Boolean = false,
+    val showBirthdayEasterEgg: Boolean = false
 )
 
 data class RapidCheckInEasterEgg(
     val title: String,
     val message: String
 )
+
+internal fun shouldShowBirthdayPrompt(
+    isBirthdayToday: Boolean,
+    shownDate: String,
+    today: String
+): Boolean = isBirthdayToday && shownDate != today
 
 class MainViewModel(
     private val appContext: Context,
@@ -93,10 +107,41 @@ class MainViewModel(
         uiState = uiState.copy(rapidCheckInEasterEgg = null)
     }
 
+    // --- 生日彩蛋 ---
+
+    fun onHomeVisible() {
+        val today = todayDate()
+        val isBirthdayToday = isBirthdayToday()
+        if (!shouldShowBirthdayPrompt(
+                isBirthdayToday = isBirthdayToday,
+                shownDate = dataStore.getBirthdayPromptShownDate(),
+                today = today
+            )
+        ) return
+
+        dataStore.setBirthdayPromptShownDate(today)
+        uiState = uiState.copy(isBirthdayToday = true, showBirthdayPrompt = true)
+    }
+
+    fun dismissBirthdayPrompt() {
+        uiState = uiState.copy(showBirthdayPrompt = false)
+    }
+
+    fun openBirthdayEasterEgg() {
+        uiState = uiState.copy(showBirthdayPrompt = false, showBirthdayEasterEgg = true)
+    }
+
+    fun closeBirthdayEasterEgg() {
+        uiState = uiState.copy(showBirthdayEasterEgg = false)
+    }
+
     private fun startCountdownUpdates() {
         viewModelScope.launch {
             while (isActive) {
-                uiState = uiState.copy(countdown = dataStore.getTimeUntilFamilyNotification())
+                uiState = uiState.copy(
+                    countdown = dataStore.getTimeUntilFamilyNotification(),
+                    isBirthdayToday = isBirthdayToday()
+                )
                 delay(1000)
             }
         }
@@ -120,9 +165,19 @@ class MainViewModel(
             checkInDates = dataStore.getCheckInDates(),
             countdown = dataStore.getTimeUntilFamilyNotification(),
             daysUntilNextBlessing = daysUntilNextBlessing(streakDays),
-            careMessage = careMessage
+            careMessage = careMessage,
+            isBirthdayToday = isBirthdayToday()
         )
     }
+
+    private fun isBirthdayToday(): Boolean =
+        BirthdayMatcher.isBirthdayToday(
+            birthdayMonth = dataStore.getBirthdayMonth(),
+            birthdayDay = dataStore.getBirthdayDay()
+        )
+
+    private fun todayDate(): String =
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
     private fun daysUntilNextBlessing(streakDays: Int): Int {
         val remainder = streakDays % 3

@@ -29,7 +29,11 @@ data class SettingsUiState(
     val familyIntervalError: Boolean = false,
     val familyWarningError: Boolean = false,
     val quietHoursError: Boolean = false,
-    val tutorialStepIndex: Int = -1
+    val tutorialStepIndex: Int = -1,
+    // 生日設定
+    val birthdayMonth: String = "",   // 空字串表示未設定
+    val birthdayDay: String = "",     // 空字串表示未設定
+    val birthdayError: Boolean = false
 )
 
 data class FamilyContactUiState(
@@ -53,6 +57,8 @@ class SettingsViewModel(
 
     fun reloadState(tutorialMode: Boolean, tutorialStartIndex: Int = 0) {
         val current = dataStore.getFamilyNotifyIntervalFloat()
+        val storedMonth = dataStore.getBirthdayMonth()
+        val storedDay = dataStore.getBirthdayDay()
         uiState = SettingsUiState(
             userName = dataStore.getUserName(),
             checkInInterval = dataStore.getNotifyInterval().toString(),
@@ -66,7 +72,9 @@ class SettingsViewModel(
             quietHoursEnabled = dataStore.isQuietHoursEnabled(),
             quietHoursStart = formatMinutes(dataStore.getQuietHoursStartMinutes()),
             quietHoursEnd = formatMinutes(dataStore.getQuietHoursEndMinutes()),
-            tutorialStepIndex = if (tutorialMode) tutorialStartIndex else -1
+            tutorialStepIndex = if (tutorialMode) tutorialStartIndex else -1,
+            birthdayMonth = if (storedMonth == 0) "" else storedMonth.toString(),
+            birthdayDay = if (storedDay == 0) "" else storedDay.toString()
         )
     }
 
@@ -139,6 +147,21 @@ class SettingsViewModel(
 
     fun onQuietHoursEndChanged(value: String) {
         uiState = uiState.copy(quietHoursEnd = value, quietHoursError = false)
+    }
+
+    fun onBirthdayMonthChanged(value: String) {
+        val sanitized = value.filter(Char::isDigit).take(2)
+        uiState = uiState.copy(birthdayMonth = sanitized, birthdayError = false)
+    }
+
+    fun onBirthdayDayChanged(value: String) {
+        val sanitized = value.filter(Char::isDigit).take(2)
+        uiState = uiState.copy(birthdayDay = sanitized, birthdayError = false)
+    }
+
+    fun clearBirthday() {
+        dataStore.clearBirthday()
+        uiState = uiState.copy(birthdayMonth = "", birthdayDay = "", birthdayError = false)
     }
 
     fun onTutorialNext(lastIndex: Int): Boolean {
@@ -268,6 +291,20 @@ class SettingsViewModel(
         dataStore.setQuietHoursStartMinutes(quietStartMinutes)
         dataStore.setQuietHoursEndMinutes(quietEndMinutes)
 
+        // 儲存生日（選填，空白時清除）
+        val monthStr = state.birthdayMonth.trim()
+        val dayStr = state.birthdayDay.trim()
+        if (monthStr.isBlank() && dayStr.isBlank()) {
+            dataStore.clearBirthday()
+        } else {
+            val birthdayValidation = validateBirthday(monthStr, dayStr)
+            if (birthdayValidation == null) {
+                uiState = uiState.copy(birthdayError = true)
+                return false
+            }
+            dataStore.setBirthday(birthdayValidation.first, birthdayValidation.second)
+        }
+
         return true
     }
 
@@ -297,6 +334,25 @@ class SettingsViewModel(
 
     private fun normalizedFamilyContacts(contacts: List<FamilyContactUiState>): List<FamilyContact> {
         return validateFamilyContactsOrNull(contacts).orEmpty()
+    }
+
+    /**
+     * 驗證生日輸入，回傳 Pair(month, day) 或 null（驗證失敗）。
+     * 月份 1–12，日期 1–31，且需符合各月實際天數（含 2/29）。
+     */
+    private fun validateBirthday(monthStr: String, dayStr: String): Pair<Int, Int>? {
+        val month = monthStr.toIntOrNull() ?: return null
+        val day = dayStr.toIntOrNull() ?: return null
+        if (month !in 1..12) return null
+        if (day !in 1..31) return null
+        // 各月最大天數（2 月允許 29，以容許 2/29 生日）
+        val maxDay = when (month) {
+            2 -> 29
+            4, 6, 9, 11 -> 30
+            else -> 31
+        }
+        if (day > maxDay) return null
+        return Pair(month, day)
     }
 
     private fun parseTimeToMinutes(value: String): Int? {

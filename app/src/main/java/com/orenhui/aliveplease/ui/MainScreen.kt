@@ -50,6 +50,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -82,6 +83,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun MainScreen(
     onNavigateToSettings: () -> Unit,
+    isVisible: Boolean = true,
     tutorialMode: Boolean = false,
     onTutorialNext: () -> Unit = {},
     onTutorialBack: () -> Unit = {},
@@ -134,6 +136,10 @@ fun MainScreen(
 
     LaunchedEffect(Unit) {
         viewModel.refreshCareMessage()
+    }
+
+    LaunchedEffect(isVisible, tutorialMode) {
+        if (isVisible && !tutorialMode) viewModel.onHomeVisible()
     }
 
     LaunchedEffect(isRefreshing) {
@@ -219,6 +225,23 @@ fun MainScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // 生日當天的首要內容
+                AnimatedVisibility(
+                    visible = uiState.isBirthdayToday && !tutorialMode,
+                    enter = fadeIn(animationSpec = tween(300)) + scaleIn(
+                        initialScale = 0.95f,
+                        animationSpec = tween(300)
+                    ),
+                    exit = fadeOut(animationSpec = tween(200))
+                ) {
+                    Column {
+                        BirthdayInvitationBanner(
+                            onOpen = viewModel::openBirthdayEasterEgg
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
@@ -443,11 +466,134 @@ fun MainScreen(
         )
     }
 
+    if (uiState.showBirthdayPrompt) {
+        BirthdayInvitationPromptDialog(
+            onStart = viewModel::openBirthdayEasterEgg,
+            onDismiss = viewModel::dismissBirthdayPrompt
+        )
+    }
+
+    // 生日彩蛋全螢幕
+    if (uiState.showBirthdayEasterEgg) {
+        BirthdayEasterEggDialog(
+            onDismiss = viewModel::closeBirthdayEasterEgg
+        )
+    }
+
     farewellMessage?.let { message ->
         FarewellDialog(
             message = message,
             onDismissRequest = onExitApp
         )
+    }
+}
+
+@Composable
+private fun BirthdayInvitationPromptDialog(
+    onStart: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 360.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(AppColors.SurfaceLight, AppColors.SurfaceDark)
+                    )
+                )
+                .border(
+                    1.dp,
+                    Brush.linearGradient(
+                        listOf(
+                            AppColors.AccentAmber.copy(alpha = 0.75f),
+                            AppColors.PrimaryGreen.copy(alpha = 0.35f)
+                        )
+                    ),
+                    RoundedCornerShape(28.dp)
+                )
+                .padding(horizontal = 26.dp, vertical = 28.dp)
+        ) {
+            Text(
+                text = "✦",
+                color = AppColors.AccentAmber.copy(alpha = 0.75f),
+                fontSize = 18.sp,
+                modifier = Modifier.align(Alignment.TopStart)
+            )
+            Text(
+                text = "✦",
+                color = AppColors.PrimaryGreen.copy(alpha = 0.6f),
+                fontSize = 13.sp,
+                modifier = Modifier.align(Alignment.TopEnd)
+            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    AppColors.AccentAmber.copy(alpha = 0.3f),
+                                    AppColors.AccentAmber.copy(alpha = 0.06f)
+                                )
+                            ),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🎂", fontSize = 42.sp)
+                }
+                Spacer(modifier = Modifier.height(18.dp))
+                Text(
+                    text = stringResource(R.string.birthday_invitation_title),
+                    color = AppColors.TextPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.birthday_invitation_message),
+                    color = AppColors.TextSecondary,
+                    fontSize = 14.sp,
+                    lineHeight = 22.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = onStart,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.AccentAmber
+                    )
+                ) {
+                    Text(
+                        text = stringResource(R.string.birthday_invitation_open),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        text = stringResource(R.string.birthday_invitation_later),
+                        color = AppColors.TextHint
+                    )
+                }
+            }
+        }
     }
 }
 

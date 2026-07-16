@@ -359,6 +359,7 @@ private fun HomePagerScreen(
                             pagerState.animateScrollToPage(1)
                         }
                     },
+                    isVisible = pagerState.currentPage == 0,
                     exitFarewellEnabled = pagerState.currentPage == 0,
                     onExitApp = { activity?.finish() }
                 )

@@ -45,6 +45,9 @@ class AppDataStore(private val context: Context) {
         private const val KEY_IS_FIRST_LAUNCH = "is_first_launch"
         private const val KEY_SETUP_TUTORIAL_PENDING = "setup_tutorial_pending"
         private const val KEY_USER_NAME = "user_name"
+        private const val KEY_BIRTHDAY_MONTH = "birthday_month"
+        private const val KEY_BIRTHDAY_DAY = "birthday_day"
+        private const val KEY_BIRTHDAY_PROMPT_SHOWN_DATE = "birthday_prompt_shown_date"
 
         private const val DEFAULT_NOTIFY_INTERVAL = 12L
         private const val DEFAULT_FAMILY_NOTIFY_INTERVAL = 28L
@@ -345,6 +348,39 @@ class AppDataStore(private val context: Context) {
 
     fun setUserName(name: String) {
         prefs.edit().putString(KEY_USER_NAME, name.trim()).apply()
+    }
+
+    /** 取得已儲存的生日月份（1–12）；0 代表未設定。 */
+    fun getBirthdayMonth(): Int = prefs.getInt(KEY_BIRTHDAY_MONTH, 0)
+
+    /** 取得已儲存的生日日（1–31）；0 代表未設定。 */
+    fun getBirthdayDay(): Int = prefs.getInt(KEY_BIRTHDAY_DAY, 0)
+
+    /**
+     * 儲存生日月日。
+     * @param month 1–12；0 或超出範圍視為清除
+     * @param day   1–31；0 或超出範圍視為清除
+     */
+    fun setBirthday(month: Int, day: Int) {
+        prefs.edit()
+            .putInt(KEY_BIRTHDAY_MONTH, month)
+            .putInt(KEY_BIRTHDAY_DAY, day)
+            .apply()
+    }
+
+    /** 清除已儲存的生日。 */
+    fun clearBirthday() {
+        prefs.edit()
+            .putInt(KEY_BIRTHDAY_MONTH, 0)
+            .putInt(KEY_BIRTHDAY_DAY, 0)
+            .apply()
+    }
+
+    fun getBirthdayPromptShownDate(): String =
+        prefs.getString(KEY_BIRTHDAY_PROMPT_SHOWN_DATE, "").orEmpty()
+
+    fun setBirthdayPromptShownDate(dateString: String) {
+        prefs.edit().putString(KEY_BIRTHDAY_PROMPT_SHOWN_DATE, dateString).apply()
     }
 
     fun isFirstLaunch(): Boolean = prefs.getBoolean(KEY_IS_FIRST_LAUNCH, true)
