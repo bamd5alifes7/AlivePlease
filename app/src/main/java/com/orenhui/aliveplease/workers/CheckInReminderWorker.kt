@@ -14,6 +14,11 @@ class CheckInReminderWorker(
 
     override fun doWork(): Result {
         val dataStore = AppDataStore(applicationContext)
+        if (dataStore.isFirstLaunch()) {
+            WorkSchedulerHelper.cancelCheckInReminder(applicationContext)
+            return Result.success()
+        }
+
         if (!dataStore.shouldSendCheckInReminder()) {
             WorkSchedulerHelper.scheduleCheckInReminder(applicationContext)
             return Result.success()

@@ -412,6 +412,13 @@ class AppDataStore(private val context: Context) {
         return if (remaining > 0) remaining else 0L
     }
 
+    fun getCheckInReminderInitialDelay(): Long =
+        if (hasCheckedIn()) {
+            getTimeUntilCheckInReminder()
+        } else {
+            TimeUnit.HOURS.toMillis(getNotifyInterval())
+        }
+
     fun shouldSendCheckInReminder(): Boolean {
         return getTimeUntilCheckInReminder() <= 0L
     }

@@ -138,6 +138,7 @@ fun AlivePleaseApp(
                 onSecondaryAction = {
                     dataStore.setFirstLaunchCompleted()
                     dataStore.clearSetupTutorialPending()
+                    onSettingsSaved()
                     navController.navigateOnce("home") {
                         popUpTo("onboarding") { inclusive = true }
                     }
@@ -188,8 +189,10 @@ fun AlivePleaseApp(
 
         composable("settings_tutorial") {
             LaunchedEffect(Unit) {
+                val wasFirstLaunch = dataStore.isFirstLaunch()
                 dataStore.setFirstLaunchCompleted()
                 dataStore.clearSetupTutorialPending()
+                if (wasFirstLaunch) onSettingsSaved()
             }
             SettingsScreen(
                 onNavigateBack = {

@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
@@ -37,6 +38,14 @@ class AppDataStoreTest {
         dataStore.setFamilyEmail("family@example.com")
 
         assertFalse(dataStore.shouldScheduleFamilyNotification())
+    }
+
+    @Test
+    fun firstCheckInReminder_waitsForTheFullInterval() {
+        assertEquals(
+            TimeUnit.HOURS.toMillis(dataStore.getNotifyInterval()),
+            dataStore.getCheckInReminderInitialDelay()
+        )
     }
 
     @Test

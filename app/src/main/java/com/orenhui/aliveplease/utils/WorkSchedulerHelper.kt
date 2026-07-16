@@ -54,11 +54,16 @@ object WorkSchedulerHelper {
 
     fun scheduleCheckInReminder(context: Context) {
         val dataStore = AppDataStore(context)
+        if (dataStore.isFirstLaunch()) {
+            cancelCheckInReminder(context)
+            return
+        }
+
         val request = PeriodicWorkRequestBuilder<CheckInReminderWorker>(
             dataStore.getNotifyInterval(),
             TimeUnit.HOURS
         )
-            .setInitialDelay(dataStore.getTimeUntilCheckInReminder(), TimeUnit.MILLISECONDS)
+            .setInitialDelay(dataStore.getCheckInReminderInitialDelay(), TimeUnit.MILLISECONDS)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiresBatteryNotLow(false)
@@ -72,6 +77,11 @@ object WorkSchedulerHelper {
             request
         )
 
+        cancelDeferredCheckInReminder(context)
+    }
+
+    fun cancelCheckInReminder(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(CHECK_IN_WORK_NAME)
         cancelDeferredCheckInReminder(context)
     }
 
